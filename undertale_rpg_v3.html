@@ -1,0 +1,2267 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>UNDERTALE RPG Menu</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.4/peerjs.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+  :root {
+    --bg: #000;
+    --white: #fff;
+    --yellow: #ffff00;
+    --red: #ff0000;
+    --green: #00ff00;
+    --blue: #00ccff;
+    --purple: #2a0040;
+    --purple-border: #9900ff;
+    --box-border: 3px solid #fff;
+    --dim: #1a1a1a;
+    --border-mid: #333;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    background: var(--bg);
+    color: var(--white);
+    font-family: 'Press Start 2P', monospace;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 10px;
+    font-size: 10px;
+    touch-action: manipulation;
+  }
+
+  .screen { display: none; width: 100%; max-width: 460px; }
+  .screen.active { display: flex; flex-direction: column; }
+
+  /* ─── ROLE SELECTOR — UNDERTALE STYLE ─── */
+  #role-selector {
+    width: 100%; max-width: 460px;
+    background: #000;
+    display: flex; flex-direction: column; align-items: center;
+    padding: 0;
+    position: relative;
+    overflow: hidden;
+  }
+
+  #role-title-area {
+    width: 100%; text-align: center; padding: 30px 20px 10px;
+  }
+  #role-title-area h1 {
+    font-size: 18px; color: var(--white); letter-spacing: 4px;
+    text-shadow: 0 0 20px rgba(255,255,255,0.15);
+    margin-bottom: 8px;
+  }
+  #role-title-area .subtitle {
+    font-size: 7px; color: #555; letter-spacing: 2px;
+  }
+
+  #role-soul {
+    font-size: 28px; margin: 18px 0 6px;
+    animation: soulFloat 2s ease-in-out infinite;
+    filter: drop-shadow(0 0 8px rgba(255,0,0,0.5));
+  }
+  @keyframes soulFloat {
+    0%,100% { transform: translateY(0); }
+    50% { transform: translateY(-6px); }
+  }
+
+  #role-box {
+    border: 3px solid #fff; background: #000;
+    width: 90%; max-width: 380px;
+    padding: 20px 16px;
+    display: flex; flex-direction: column; gap: 10px;
+    margin-bottom: 24px;
+  }
+
+  #role-instruction {
+    font-size: 7px; color: #888; text-align: center; line-height: 2;
+    margin-bottom: 4px;
+  }
+
+  #channel-input-row {
+    display: flex; gap: 6px; width: 100%; align-items: center;
+  }
+  #channel-code-input {
+    flex: 1; background: #000; border: 2px solid #555; color: #fff;
+    font-family: 'Press Start 2P', monospace; font-size: 11px; padding: 10px;
+    text-transform: uppercase; letter-spacing: 3px; text-align: center;
+    transition: border-color 0.2s;
+  }
+  #channel-code-input:focus { outline: none; border-color: var(--yellow); }
+  #channel-code-input::placeholder { color: #333; letter-spacing: 2px; font-size: 8px; }
+
+  .code-gen-btn {
+    background: #000; border: 2px solid #555; color: #888;
+    font-family: 'Press Start 2P', monospace; font-size: 14px;
+    padding: 8px 12px; cursor: pointer; transition: all 0.15s;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .code-gen-btn:hover { border-color: #888; color: #ccc; }
+  .code-gen-btn:active { border-color: var(--yellow); color: var(--yellow); }
+
+  .role-options {
+    display: flex; flex-direction: column; gap: 8px; margin-top: 6px;
+  }
+
+  .role-btn-ut {
+    background: #000; border: 2px solid #fff; color: #fff;
+    font-family: 'Press Start 2P', monospace; font-size: 8px;
+    padding: 14px 12px; cursor: pointer; width: 100%;
+    display: flex; align-items: center; gap: 10px;
+    transition: all 0.1s; position: relative;
+    letter-spacing: 0.5px;
+  }
+  .role-btn-ut .soul-marker {
+    color: transparent; font-size: 10px; transition: color 0.1s;
+    flex-shrink: 0;
+  }
+  .role-btn-ut:hover { background: #111; }
+  .role-btn-ut:hover .soul-marker { color: var(--red); }
+  .role-btn-ut:active { background: #1a1a1a; }
+  .role-btn-ut:active .soul-marker { color: var(--yellow); }
+
+  .role-btn-ut.gm-style { border-color: #cc44ff; color: #cc88ff; }
+  .role-btn-ut.gm-style:hover { background: #0a0015; }
+  .role-btn-ut.gm-style:hover .soul-marker { color: #cc44ff; }
+
+  .role-btn-ut.player-style { border-color: #4488ff; color: #88bbff; }
+  .role-btn-ut.player-style:hover { background: #000a1a; }
+  .role-btn-ut.player-style:hover .soul-marker { color: #4488ff; }
+
+  #role-hint {
+    font-size: 5px; color: #333; text-align: center;
+    line-height: 2; margin-top: 4px; letter-spacing: 0.5px;
+    padding: 0 10px 16px;
+  }
+
+  /* ─── BATTLE ─── */
+  #battle-screen { gap: 6px; }
+
+  #enemy-controls {
+    display: flex; justify-content: center; gap: 4px; align-items: center;
+    padding: 4px 0; border-bottom: 1px solid var(--border-mid);
+  }
+  .enemy-hp-btn {
+    background: var(--dim); border: 1px solid #444; color: #ccc;
+    font-family: inherit; font-size: 7px; padding: 3px 8px; cursor: pointer;
+    transition: background 0.1s;
+  }
+  .enemy-hp-btn:active { background: #333; color: #fff; }
+
+  #enemy-hp-container { display: flex; flex-direction: column; align-items: center; width: 100px; margin: 0 6px; }
+  #enemy-hp-txt { font-size: 7px; margin-bottom: 3px; color: #ccc; letter-spacing: 1px; }
+  #enemy-hp-bar-bg { width: 100%; height: 5px; background: #222; border: 1px solid #555; }
+  #enemy-hp-fill { height: 100%; background: #00ff00; width: 100%; transition: width 0.3s, background 0.3s; }
+
+  #enemy-zone {
+    display: flex; justify-content: center; align-items: center;
+    min-height: 100px; padding: 6px;
+    border: 1px solid var(--border-mid);
+    background: #050505;
+  }
+  #enemy-sprite {
+    font-size: 52px; text-align: center;
+    user-select: none; line-height: 1;
+    max-width: 180px; max-height: 180px;
+  }
+  #enemy-sprite img { width: 100%; height: 100%; object-fit: contain; }
+
+  /* Enemy shake animation */
+  @keyframes enemyShake {
+    0%,100% { transform: translateX(0); }
+    15% { transform: translateX(-8px); }
+    30% { transform: translateX(6px); }
+    45% { transform: translateX(-5px); }
+    60% { transform: translateX(4px); }
+    75% { transform: translateX(-2px); }
+    90% { transform: translateX(1px); }
+  }
+  #enemy-sprite.shake { animation: enemyShake 0.4s ease-out; }
+
+  /* Player hit flash */
+  @keyframes playerHitFlash {
+    0% { background: rgba(255,0,0,0.3); }
+    100% { background: transparent; }
+  }
+  #hp-section.hit-flash { animation: playerHitFlash 0.5s ease-out; }
+
+  #dialogue-box {
+    border: var(--box-border); padding: 10px 12px;
+    min-height: 54px; line-height: 1.9; font-size: 9px;
+    background: #000; border-color: #ddd;
+  }
+  #dialogue-text { color: #eee; white-space: pre-wrap; word-break: break-word; }
+
+  #hp-section {
+    display: flex; align-items: center; gap: 5px; padding: 5px 0;
+    border-top: 1px solid var(--border-mid);
+    border-bottom: 1px solid var(--border-mid);
+    flex-wrap: nowrap;
+    transition: background 0.3s;
+  }
+  #char-name-display { color: var(--yellow); font-size: 8px; white-space: nowrap; min-width: 56px; flex-shrink: 0; }
+  #hp-label { color: #aaa; font-size: 7px; white-space: nowrap; flex-shrink: 0; }
+
+  .hp-quick-btn {
+    background: #0a0a0a; border: 1px solid #444; color: #ccc;
+    font-family: 'Press Start 2P', monospace; font-size: 10px;
+    width: 24px; height: 24px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    transition: background 0.1s;
+  }
+  #hp-quick-minus:active { background: #3a0000; border-color: #ff0000; color: #ff5555; }
+  #hp-quick-plus:active  { background: #003a00; border-color: #00ff00; color: #55ff55; }
+
+  #oob-btn {
+    border-color: #2a4a2a; color: #669966; font-size: 6px;
+    width: auto; padding: 0 5px; letter-spacing: 0;
+  }
+  #oob-btn.active { background: #0a1f0a; border-color: #33cc33; color: #33ff33; }
+
+  #hp-bar-outer { flex: 1; height: 14px; background: #1a1a1a; border: 1px solid #666; min-width: 40px; }
+  #hp-bar-inner { height: 100%; background: var(--yellow); transition: width 0.3s ease, background 0.3s ease; }
+
+  #hp-numbers { font-size: 7px; white-space: nowrap; color: #ddd; flex-shrink: 0; }
+  #def-numbers { font-size: 7px; white-space: nowrap; color: var(--blue); margin-left: 3px; flex-shrink: 0; }
+
+  #attack-box { border: var(--box-border); background: #000; padding: 10px; display: none; flex-direction: column; gap: 8px; }
+  #attack-box.active { display: flex; }
+  #minigame-label { font-size: 7px; color: #aaa; text-align: center; letter-spacing: 1px; }
+
+  #minigame-track {
+    position: relative; width: 100%; height: 36px;
+    background: #0d0d0d; border: 1px solid #555;
+    overflow: hidden; cursor: pointer; touch-action: none;
+  }
+  #hit-zone {
+    position: absolute; top: 0; height: 100%;
+    background: rgba(255,255,0,0.15);
+    border-left: 2px solid var(--yellow); border-right: 2px solid var(--yellow);
+  }
+  #slider { position: absolute; top: 0; bottom: 0; width: 6px; background: #fff; }
+  #minigame-result { text-align: center; font-size: 8px; min-height: 12px; color: var(--yellow); }
+
+  #magic-box { border: 3px solid var(--purple-border); background: #000; padding: 10px; display: none; flex-direction: column; gap: 8px; }
+
+  .aim-circle-outer { width: 60px; height: 60px; border: 2px solid #fff; border-radius: 50%; position: relative; display:flex; justify-content:center; align-items:center; cursor:pointer;}
+  .aim-circle-inner { width: 0%; height: 0%; background: var(--purple); border-radius: 50%; pointer-events:none;}
+  .aim-zone { position:absolute; width: 100%; height: 100%; border: 4px solid rgba(0,255,0,0.4); border-radius: 50%; box-sizing: border-box; pointer-events:none;}
+
+  .hold-bar-container { width: 100%; height: 30px; border: 2px solid #fff; position: relative; cursor:pointer; background:#111; }
+  .hold-target-zone { position: absolute; height: 100%; background: rgba(0,255,0,0.3); border-left:2px solid #fff; border-right:2px solid #fff; pointer-events:none;}
+  .hold-fill { height: 100%; width: 0%; background: var(--purple); pointer-events:none; }
+
+  .seq-container { display:flex; flex-direction:column; gap:8px; align-items:center; width:100%; }
+  .seq-target { font-size: 24px; margin-bottom: 4px; }
+  .seq-buttons { display:flex; gap: 10px; }
+  .seq-btn { background: #000; border: 2px solid #fff; color: #fff; font-size: 16px; padding: 10px; cursor: pointer; }
+  .seq-btn:active { background: #fff; color: #000; }
+
+  .mash-container { display:flex; flex-direction:column; align-items:center; gap:8px; width:100%; }
+  .mash-prog { width: 100%; height: 20px; border: 2px solid #fff; background: #111; position: relative; }
+  .mash-fill { height: 100%; background: var(--red); width: 0%; }
+  .mash-btn { background: #000; border: 2px solid var(--yellow); color: var(--yellow); padding: 10px 20px; cursor: pointer; font-family: inherit; font-size: 12px; }
+  .mash-btn:active { background: var(--yellow); color: #000; }
+
+  #action-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+
+  .action-btn {
+    border: 2px solid #bbb; background: #050505; color: var(--yellow);
+    font-family: 'Press Start 2P', monospace; font-size: 8px;
+    padding: 11px 4px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    transition: background 0.08s, border-color 0.08s;
+    user-select: none; letter-spacing: 0.5px;
+  }
+  .action-btn:active { background: #1a1a1a; border-color: #fff; }
+  .action-btn .btn-icon { font-size: 9px; color: var(--red); display: none; }
+  .action-btn:active .btn-icon { display: inline; }
+
+  #submenu { border: 2px solid #aaa; background: #000; display: none; flex-direction: column; transition: border-color 0.15s; }
+  #submenu.active { display: flex; }
+  #submenu-title { background: #ddd; color: #000; padding: 6px 10px; font-size: 8px; text-transform: uppercase; letter-spacing: 1px; }
+  #submenu-content { padding: 8px; display: grid; grid-template-columns: 1fr 1fr; gap: 4px; max-height: 160px; overflow-y: auto; }
+
+  .submenu-item {
+    padding: 7px 6px; cursor: pointer; font-size: 7px;
+    display: flex; align-items: center; gap: 5px;
+    word-break: break-word; line-height: 1.6; position: relative;
+    border: 1px solid transparent; transition: border-color 0.08s;
+  }
+  .submenu-item::before { content: "❤ "; color: #666; font-size: 7px; flex-shrink: 0; }
+  .submenu-item:active { border-color: #555; }
+  .submenu-item:active::before { color: var(--yellow); }
+  .submenu-item.empty { color: #444; font-style: italic; pointer-events: none; }
+  .submenu-item.empty::before { display: none; }
+  .submenu-item.disabled { color: #444 !important; pointer-events: none; }
+  .submenu-item.disabled::before { display: none; }
+
+  /* ═══ SETTINGS ═══ */
+  #settings-tabs {
+    display: flex; border-bottom: 2px solid #555; background: #050505; flex-wrap: wrap;
+  }
+  .settings-tab {
+    flex: 1; background: #050505; border: none; border-right: 1px solid #222;
+    color: #555; font-family: 'Press Start 2P', monospace; font-size: 6px;
+    padding: 9px 3px; cursor: pointer; text-align: center; line-height: 1.5; min-width: 56px;
+    transition: background 0.1s, color 0.1s;
+  }
+  .settings-tab:last-child { border-right: none; }
+  .settings-tab:hover { color: #999; }
+  .settings-tab.active { background: #fff; color: #000; }
+
+  #settings-panels { overflow-y: auto; flex: 1; padding: 10px 8px; display: flex; flex-direction: column; gap: 10px; max-height: calc(100vh - 110px); }
+
+  .tab-panel { display: none; flex-direction: column; gap: 10px; }
+  .tab-panel.active { display: flex; }
+
+  .settings-section { border: 1px solid #333; padding: 10px; background: #080808; display: flex; flex-direction: column; gap: 8px; }
+  .settings-section h3 { font-size: 7px; color: var(--yellow); border-bottom: 1px solid #222; padding-bottom: 5px; letter-spacing: 1px; }
+
+  .field-row { display: flex; align-items: center; justify-content: space-between; gap: 6px; flex-wrap: wrap; }
+  .field-label { font-size: 7px; color: #aaa; }
+  .field-input {
+    background: #050505; border: 1px solid #444; color: #ddd;
+    font-family: 'Press Start 2P', monospace; font-size: 7px;
+    padding: 7px; flex: 1; min-width: 80px;
+  }
+  .field-input:focus { outline: none; border-color: var(--yellow); color: #fff; }
+
+  .grid-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .grid-row { display: flex; flex-direction: column; gap: 5px; }
+  .grid-row label { font-size: 6px; color: #888; letter-spacing: 0.5px; }
+  .grid-row input, .grid-row select {
+    background: #050505; border: 1px solid #333; color: #ddd;
+    font-family: 'Press Start 2P', monospace; font-size: 7px; padding: 7px; width: 100%;
+  }
+  .grid-row input:focus, .grid-row select:focus { border-color: var(--yellow); outline: none; color: #fff; }
+
+  #enemy-emoji-row { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
+  .emoji-choice { font-size: 26px; cursor: pointer; border: 2px solid transparent; padding: 2px; opacity: 0.6; transition: opacity 0.1s; }
+  .emoji-choice:hover { opacity: 0.9; }
+  .emoji-choice.selected { border-color: var(--yellow); opacity: 1; }
+
+  #items-list, #magics-list { display: flex; flex-direction: column; gap: 6px; }
+  .item-card { border: 1px solid #2a2a2a; background: #000; }
+  .item-card-header { display: flex; align-items: center; gap: 8px; padding: 8px 10px; cursor: pointer; background: #0d0d0d; user-select: none; }
+  .item-slot-num { font-size: 7px; color: #555; }
+  .item-name-input { flex: 1; background: transparent; border: none; border-bottom: 1px solid #333; color: #ccc; font-family: inherit; font-size: 7px; padding: 3px; }
+  .item-card-body { display: none; flex-direction: column; gap: 8px; padding: 10px; border-top: 1px solid #1a1a1a; }
+  .item-card.expanded .item-card-body { display: flex; }
+
+  .checkbox-row { display: flex; gap: 10px; align-items: center; font-size: 6px; color: #888; }
+  .checkbox-row input { accent-color: var(--yellow); width: 11px; height: 11px; }
+
+  .btn-primary {
+    background: #ddd; color: #000; border: none;
+    font-family: inherit; font-size: 8px; padding: 11px;
+    cursor: pointer; width: 100%; transition: background 0.1s;
+  }
+  .btn-primary:active { background: #fff; }
+  .btn-secondary {
+    background: #000; color: #ccc; border: 1px solid #777;
+    font-family: inherit; font-size: 8px; padding: 11px;
+    cursor: pointer; width: 100%; transition: border-color 0.1s, color 0.1s;
+  }
+  .btn-secondary:active { border-color: #fff; color: #fff; }
+  .btn-danger {
+    background: #1a0000; color: #cc4444; border: 1px solid #882222;
+    font-family: inherit; font-size: 7px; padding: 9px;
+    cursor: pointer; margin-top: 8px; transition: background 0.1s;
+  }
+  .btn-danger:active { background: #2a0000; color: #ff5555; }
+
+  .settings-footer { display: flex; gap: 6px; padding: 8px; background: #000; border-top: 1px solid #222; }
+
+  #open-settings-btn {
+    background: #000; color: #555; border: 1px solid #333;
+    font-family: inherit; font-size: 7px; padding: 7px;
+    margin-top: 4px; cursor: pointer; width: 100%;
+    transition: color 0.1s, border-color 0.1s;
+    letter-spacing: 1px;
+  }
+  #open-settings-btn:active { color: #aaa; border-color: #666; }
+
+  #damage-popup { position: fixed; top: 30%; left: 50%; transform: translateX(-50%) scale(0); font-size: 28px; color: var(--red); text-shadow: 2px 2px 0 #000; pointer-events: none; z-index: 999; white-space: nowrap; }
+  #damage-popup.show { animation: popDmg 0.8s ease-out forwards; }
+  @keyframes popDmg { 0% { transform: translateX(-50%) scale(0.5) translateY(0); opacity: 1; } 40% { transform: translateX(-50%) scale(1.1) translateY(-16px); opacity: 1; } 100% { transform: translateX(-50%) scale(1) translateY(-50px); opacity: 0; } }
+
+  #hp-change-popup { position: fixed; top: 40%; left: 50%; transform: translateX(-50%); font-size: 14px; text-shadow: 2px 2px 0 #000; pointer-events: none; z-index: 999; display: none; white-space: nowrap; font-family: inherit; font-weight: bold; }
+  #hp-change-popup.show { display: block; animation: floatUp 0.8s ease-out forwards; }
+  @keyframes floatUp { 0% { opacity: 1; transform: translateX(-50%) translateY(0); } 100% { opacity: 0; transform: translateX(-50%) translateY(-28px); } }
+
+  #gameover-screen { text-align: center; justify-content: center; align-items: center; gap: 20px; height: 100vh; background: #000; }
+  #gameover-title { font-size: 32px; color: var(--white); letter-spacing: 2px; }
+  #gameover-quote { font-size: 9px; color: #666; line-height: 2.2; max-width: 80%; }
+
+  /* ─── GM BAR — REDESIGNED ─── */
+  #gm-bar {
+    display: none; width: 100%; max-width: 460px;
+    background: #000;
+    border: 3px solid #fff;
+    margin-bottom: 6px;
+    flex-direction: column;
+  }
+  #gm-bar.active { display: flex; }
+
+  #gm-bar-header {
+    background: #fff; color: #000; padding: 6px 10px;
+    font-size: 7px; letter-spacing: 2px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  #gm-bar-header .gm-conn-status {
+    display: flex; align-items: center; gap: 4px;
+  }
+  #gm-status-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: #888; display: inline-block;
+    transition: background 0.3s;
+  }
+  #gm-status-dot.connected { background: #00cc44; }
+  #gm-status-dot.waiting { background: #ffaa00; animation: pulse 1s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.4} }
+
+  #gm-bar-body { padding: 8px; display: flex; flex-direction: column; gap: 6px; }
+
+  /* GM HP Bars (realtime) */
+  .gm-hp-row {
+    display: flex; align-items: center; gap: 6px; padding: 4px 0;
+    border-bottom: 1px solid #1a1a1a;
+  }
+  .gm-hp-row:last-of-type { border-bottom: none; }
+  .gm-hp-icon { font-size: 10px; flex-shrink: 0; }
+  .gm-hp-label { font-size: 6px; color: #888; min-width: 40px; flex-shrink: 0; }
+  .gm-hp-bar-outer { flex: 1; height: 10px; background: #111; border: 1px solid #444; min-width: 60px; }
+  .gm-hp-bar-fill { height: 100%; transition: width 0.3s, background 0.3s; }
+  .gm-hp-bar-fill.player-fill { background: var(--yellow); }
+  .gm-hp-bar-fill.enemy-fill { background: var(--green); }
+  .gm-hp-nums { font-size: 6px; color: #aaa; min-width: 55px; text-align: right; flex-shrink: 0; }
+
+  /* GM Action Sections */
+  .gm-actions-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 4px;
+  }
+
+  .gm-act-btn {
+    background: #000; border: 2px solid #555; color: #ccc;
+    font-family: 'Press Start 2P', monospace; font-size: 6px;
+    padding: 8px 4px; cursor: pointer; text-align: center;
+    transition: all 0.1s; letter-spacing: 0.5px;
+    display: flex; align-items: center; justify-content: center; gap: 4px;
+  }
+  .gm-act-btn:hover { border-color: #888; color: #fff; }
+  .gm-act-btn:active { background: #111; border-color: #fff; }
+
+  .gm-act-btn.atk { border-color: #882222; color: #ff6666; }
+  .gm-act-btn.atk:hover { border-color: #cc3333; }
+  .gm-act-btn.atk:active { background: #1a0000; border-color: #ff4444; }
+
+  .gm-act-btn.heal { border-color: #228833; color: #66ff88; }
+  .gm-act-btn.heal:hover { border-color: #33cc55; }
+  .gm-act-btn.heal:active { background: #001a08; border-color: #44ff66; }
+
+  .gm-act-btn.talk { border-color: #886622; color: #ffcc44; }
+  .gm-act-btn.talk:hover { border-color: #ccaa33; }
+  .gm-act-btn.talk:active { background: #1a1400; border-color: #ffdd44; }
+
+  .gm-act-btn.send { border-color: #226688; color: #44aaff; }
+  .gm-act-btn.send:hover { border-color: #3399cc; }
+  .gm-act-btn.send:active { background: #001020; border-color: #44ccff; }
+
+  .gm-section-label {
+    font-size: 6px; color: #555; letter-spacing: 1px;
+    padding: 4px 0 2px; border-top: 1px solid #1a1a1a; margin-top: 2px;
+  }
+
+  .gm-inline-row {
+    display: flex; gap: 4px; align-items: center;
+  }
+  .gm-input {
+    background: #000; border: 1px solid #444; color: #ddd;
+    font-family: 'Press Start 2P', monospace; font-size: 7px;
+    padding: 5px; flex: 1; min-width: 50px;
+  }
+  .gm-input:focus { outline: none; border-color: var(--yellow); }
+  .gm-input::placeholder { color: #333; }
+
+  #gm-msg-log {
+    font-size: 5px; color: #444; max-height: 36px; overflow-y: auto;
+    border: 1px solid #1a1a1a; padding: 4px; background: #000;
+    line-height: 1.8; margin-top: 2px;
+  }
+
+  /* GM Quick Talk area */
+  .gm-talk-area {
+    display: none; flex-direction: column; gap: 4px;
+    border: 1px solid #886622; padding: 6px; background: #0a0800;
+  }
+  .gm-talk-area.active { display: flex; }
+  .gm-talk-textarea {
+    width: 100%; height: 40px; background: #000; color: #ffcc44;
+    border: 1px solid #553300; font-family: 'Press Start 2P', monospace;
+    font-size: 7px; padding: 6px; resize: none;
+  }
+  .gm-talk-textarea:focus { outline: none; border-color: #ffcc44; }
+  .gm-talk-textarea::placeholder { color: #553300; }
+
+  /* GM Custom Damage area */
+  .gm-custom-dmg-area {
+    display: none; flex-direction: column; gap: 4px;
+    border: 1px solid #882222; padding: 6px; background: #0a0000;
+  }
+  .gm-custom-dmg-area.active { display: flex; }
+
+  .gm-screen { display: none; width: 100%; max-width: 460px; flex-direction: column; gap: 8px; }
+  .gm-screen.active { display: flex; }
+
+  /* GM Send panel */
+  #gm-send-panel {
+    display: none; width: 100%; max-width: 460px;
+    background: #000; border: 3px solid #fff;
+    flex-direction: column;
+  }
+  #gm-send-panel-header {
+    background: #fff; color: #000; padding: 6px 10px;
+    font-size: 7px; letter-spacing: 1px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  #gm-send-panel-body { padding: 10px; }
+</style>
+</head>
+<body>
+
+<!-- ROLE SELECTOR — UNDERTALE STYLE -->
+<div id="role-selector">
+  <div id="role-title-area">
+    <h1>UNDERTALE</h1>
+    <div class="subtitle">T A B L E T O P &nbsp; R P G</div>
+  </div>
+
+  <div id="role-soul">❤️</div>
+
+  <div id="role-box">
+    <div id="role-instruction">* Insira o código da sessão ou gere um novo.</div>
+
+    <div id="channel-input-row">
+      <input id="channel-code-input" type="text" maxlength="8" placeholder="CÓDIGO" autocomplete="off" spellcheck="false">
+      <button class="code-gen-btn" onclick="generateCode()" title="Gerar Código">🔄</button>
+    </div>
+
+    <div class="role-options">
+      <button class="role-btn-ut gm-style" onclick="enterAsGM()">
+        <span class="soul-marker">❤</span>
+        <span>👑 MESTRE (GM)</span>
+      </button>
+      <button class="role-btn-ut player-style" onclick="enterAsPlayer()">
+        <span class="soul-marker">❤</span>
+        <span>⚔ JOGADOR</span>
+      </button>
+    </div>
+  </div>
+
+  <div id="role-hint">O Mestre e o Jogador usam o mesmo código.<br>Abra em duas abas ou dispositivos.</div>
+</div>
+
+<!-- GM BAR — REDESIGNED -->
+<div id="gm-bar">
+  <div id="gm-bar-header">
+    <span>👑 PAINEL DO MESTRE</span>
+    <div class="gm-conn-status">
+      <span id="gm-status-dot"></span>
+      <span id="gm-channel-display" style="color:#555;"></span>
+    </div>
+  </div>
+  <div id="gm-bar-body">
+
+    <!-- Realtime HP Bars -->
+    <div class="gm-hp-row">
+      <span class="gm-hp-icon">❤</span>
+      <span class="gm-hp-label">PLAYER</span>
+      <div class="gm-hp-bar-outer"><div class="gm-hp-bar-fill player-fill" id="gm-player-hp-bar" style="width:100%;"></div></div>
+      <span class="gm-hp-nums" id="gm-hp-display">-- / --</span>
+    </div>
+    <div class="gm-hp-row">
+      <span class="gm-hp-icon">👾</span>
+      <span class="gm-hp-label">INIMIGO</span>
+      <div class="gm-hp-bar-outer"><div class="gm-hp-bar-fill enemy-fill" id="gm-enemy-hp-bar" style="width:100%;"></div></div>
+      <span class="gm-hp-nums" id="gm-enemy-hp-display">-- / --</span>
+    </div>
+
+    <!-- Enemy Attack Section -->
+    <div class="gm-section-label">⚔ ATAQUE DO INIMIGO</div>
+    <div class="gm-actions-grid">
+      <button class="gm-act-btn atk" onclick="gmEnemyAttack()">⚔ ATK NORMAL</button>
+      <button class="gm-act-btn atk" onclick="gmToggleCustomDmg()">💥 DANO CUSTOM</button>
+    </div>
+
+    <!-- Custom Damage Area (hidden by default) -->
+    <div class="gm-custom-dmg-area" id="gm-custom-dmg-area">
+      <div class="gm-inline-row">
+        <input type="number" class="gm-input" id="gm-custom-dmg-val" placeholder="Dano" style="max-width: 70px;">
+        <input type="text" class="gm-input" id="gm-custom-dmg-msg" placeholder="Mensagem (opcional)">
+      </div>
+      <div class="gm-inline-row">
+        <button class="gm-act-btn atk" style="flex:1;" onclick="gmSendCustomDmg()">APLICAR DANO</button>
+        <button class="gm-act-btn heal" style="flex:1;" onclick="gmSendCustomHeal()">CURAR</button>
+      </div>
+    </div>
+
+    <!-- Enemy Talk Section -->
+    <div class="gm-section-label">💬 FALA DO INIMIGO</div>
+    <div class="gm-actions-grid">
+      <button class="gm-act-btn talk" onclick="gmToggleTalk()">✏ ESCREVER FALA</button>
+      <button class="gm-act-btn talk" onclick="gmQuickTaunt()">😈 PROVOCAR</button>
+    </div>
+
+    <div class="gm-talk-area" id="gm-talk-area">
+      <textarea class="gm-talk-textarea" id="gm-talk-text" placeholder="* O inimigo diz algo..."></textarea>
+      <button class="gm-act-btn talk" style="width:100%;" onclick="gmSendTalk()">📤 ENVIAR FALA</button>
+    </div>
+
+    <!-- Send Data Section -->
+    <div class="gm-section-label">📦 ENVIAR DADOS</div>
+    <div class="gm-actions-grid">
+      <button class="gm-act-btn send" onclick="openGmSendPanel('enemy')">👾 Inimigo</button>
+      <button class="gm-act-btn send" onclick="openGmSendPanel('item')">🎒 Item</button>
+      <button class="gm-act-btn send" onclick="openGmSendPanel('magic')">🔮 Magia</button>
+      <button class="gm-act-btn send" onclick="openGmSendPanel('msg')">💬 Msg GM</button>
+    </div>
+
+    <div id="gm-msg-log"></div>
+  </div>
+</div>
+
+<!-- GM SEND PANEL -->
+<div id="gm-send-panel">
+  <div id="gm-send-panel-header">
+    <span id="gm-panel-title"></span>
+    <button class="gm-act-btn" onclick="closeGmSendPanel()" style="padding:4px 8px;">✕ FECHAR</button>
+  </div>
+  <div id="gm-panel-content" id="gm-send-panel-body" style="padding:10px;"></div>
+</div>
+
+<div id="battle-screen" class="screen">
+
+  <div id="enemy-controls">
+    <button class="enemy-hp-btn" onclick="quickEnemyHp(-10)">-10</button>
+    <button class="enemy-hp-btn" onclick="quickEnemyHp(-1)">-1</button>
+    
+    <div id="enemy-hp-container">
+      <div id="enemy-hp-txt">HP 100/100</div>
+      <div id="enemy-hp-bar-bg"><div id="enemy-hp-fill"></div></div>
+    </div>
+    
+    <button class="enemy-hp-btn" onclick="quickEnemyHp(1)">+1</button>
+    <button class="enemy-hp-btn" onclick="quickEnemyHp(10)">+10</button>
+  </div>
+
+  <div id="enemy-zone"><div id="enemy-sprite">👾</div></div>
+
+  <div id="dialogue-box"><div id="dialogue-text">* O que você vai fazer?</div></div>
+
+  <div id="hp-section">
+    <div id="char-name-display">FRISK</div>
+    <div id="hp-label">HP</div>
+    <button class="hp-quick-btn" id="hp-quick-minus" onclick="quickHp(-1)">-</button>
+    <div id="hp-bar-outer"><div id="hp-bar-inner" style="width:100%"></div></div>
+    <button class="hp-quick-btn" id="hp-quick-plus" onclick="quickHp(1)">+</button>
+    <button class="hp-quick-btn" id="oob-btn" onclick="toggleOOB()">PAZ</button>
+    <div id="hp-numbers">20 / 20</div>
+    <div id="def-numbers">DEF 0</div>
+  </div>
+
+  <div id="attack-box">
+    <div id="minigame-label">⚔ ATACAR</div>
+    <div id="minigame-track"><div id="hit-zone"></div><div id="slider"></div></div>
+    <div id="minigame-result"></div>
+  </div>
+
+  <div id="magic-box">
+    <div id="magic-mg-title" style="color:var(--white); text-align:center; font-size:8px;"></div>
+    <div id="magic-mg-area" style="min-height: 50px; display:flex; justify-content:center; align-items:center; width:100%; touch-action:none;"></div>
+    <div id="magic-mg-result" style="color:var(--yellow); text-align:center; font-size:8px; min-height:10px;"></div>
+  </div>
+
+  <div id="submenu">
+    <div id="submenu-title">MENU</div>
+    <div id="submenu-content"></div>
+  </div>
+
+  <div id="action-buttons">
+    <button class="action-btn" onclick="startAttack()"><span class="btn-icon">❤</span> LUTAR</button>
+    <button class="action-btn" onclick="openAct()"><span class="btn-icon">❤</span> AGIR</button>
+    <button class="action-btn" onclick="openItems()"><span class="btn-icon">❤</span> ITEM</button>
+    <button class="action-btn" onclick="doMercy()"><span class="btn-icon">❤</span> POUPAR</button>
+    <button class="action-btn" onclick="doFlee()" style="grid-column: span 2;"><span class="btn-icon">❤</span> FUGIR</button>
+  </div>
+
+  <button id="open-settings-btn" onclick="openSettings()">⚙ CONFIGURAÇÕES</button>
+</div>
+
+<div id="settings-screen" class="screen">
+  <div id="settings-tabs">
+    <button class="settings-tab active" onclick="switchTab(0)">STATUS</button>
+    <button class="settings-tab" onclick="switchTab(1)">INIMIGO</button>
+    <button class="settings-tab" onclick="switchTab(2)">AÇÕES</button>
+    <button class="settings-tab" onclick="switchTab(3)">MAGIA</button>
+    <button class="settings-tab" onclick="switchTab(4)">ITENS</button>
+    <button class="settings-tab" onclick="switchTab(5)">BIBLIOTECA</button>
+  </div>
+
+  <div id="settings-panels">
+    <!-- TAB 0: STATUS -->
+    <div class="tab-panel active">
+      <div class="settings-section">
+        <h3>👤 SEU PERSONAGEM</h3>
+        <div class="field-row"><label class="field-label">Nome:</label><input class="field-input" id="cfg-name" type="text" maxlength="12"></div>
+        <div class="field-row"><label class="field-label">HP Máximo:</label><input class="field-input" id="cfg-maxhp" type="number" min="1"></div>
+        <div class="grid-layout">
+          <div class="grid-row"><label>Dano Mínimo</label><input type="number" id="cfg-dmg-min"></div>
+          <div class="grid-row"><label>Dano Máximo</label><input type="number" id="cfg-dmg-max"></div>
+          <div class="grid-row"><label>Defesa Base (DEF)</label><input type="number" id="cfg-def"></div>
+          <div class="grid-row"><label>Vel. Ataque</label><input type="number" step="0.1" id="cfg-atk-speed"></div>
+          <div class="grid-row"><label>Repetições</label><input type="number" id="cfg-atk-reps"></div>
+        </div>
+      </div>
+      <button class="btn-danger" onclick="hardReset()">APAGAR SAVE DO NAVEGADOR</button>
+    </div>
+
+    <!-- TAB 1: INIMIGO -->
+    <div class="tab-panel">
+      <div class="settings-section">
+        <h3>👾 INIMIGO</h3>
+        <div class="field-row"><label class="field-label">Nome:</label><input class="field-input" id="cfg-enemy-name" type="text" maxlength="16"></div>
+        <div class="grid-layout" style="margin-top:8px;">
+           <div class="grid-row"><label>HP Atual</label><input type="number" id="cfg-enemy-hp"></div>
+           <div class="grid-row"><label>HP Máximo</label><input type="number" id="cfg-enemy-maxhp"></div>
+           <div class="grid-row"><label>ATK</label><input type="number" id="cfg-enemy-atk"></div>
+           <div class="grid-row"><label>DEF</label><input type="number" id="cfg-enemy-def"></div>
+           <div class="grid-row" style="grid-column: span 2"><label>% de Esquiva (Dodge)</label><input type="number" id="cfg-enemy-dodge" title="Chance de 0 a 100 de errar um hit"></div>
+        </div>
+        
+        <label class="field-label" style="margin-top:4px;">URL do Sprite (Deixe vazio para usar Emoji):</label>
+        <input class="field-input" id="cfg-enemy-img" type="text" placeholder="https://..." style="width:100%;">
+        
+        <label class="field-label" style="margin-top:4px;">Ou escolha um Emoji:</label>
+        <div id="enemy-emoji-row">
+          <span class="emoji-choice selected" data-emoji="👾">👾</span>
+          <span class="emoji-choice" data-emoji="💀">💀</span>
+          <span class="emoji-choice" data-emoji="🐉">🐉</span>
+          <span class="emoji-choice" data-emoji="🤖">🤖</span>
+        </div>
+        <input class="field-input" id="cfg-enemy-emoji" type="text" maxlength="4" placeholder="Outro emoji" style="width:100%;">
+
+        <h3 style="margin-top:10px;">💬 FALAS DO INIMIGO</h3>
+        <div class="grid-row"><label>Após Turno 1</label><textarea id="cfg-enemy-msg-turn1" class="field-input" style="height:30px;"></textarea></div>
+        <div class="grid-row"><label>Ao Matar o Player</label><textarea id="cfg-enemy-msg-victory" class="field-input" style="height:30px;"></textarea></div>
+        <div class="grid-row"><label>Ao Morrer</label><textarea id="cfg-enemy-msg-death" class="field-input" style="height:30px;"></textarea></div>
+      </div>
+    </div>
+
+    <!-- TAB 2: AÇÕES -->
+    <div class="tab-panel">
+      <div class="settings-section">
+        <h3>✨ TEXTOS DE AGIR</h3>
+        <div id="acts-list" class="grid-layout" style="display:flex; flex-direction:column; gap:12px;"></div>
+      </div>
+    </div>
+
+    <!-- TAB 3: MAGIA -->
+    <div class="tab-panel">
+      <div class="settings-section">
+        <h3>🔮 SISTEMA DE MAGIAS</h3>
+        <div class="checkbox-row" style="margin-bottom: 8px;">
+          <input type="checkbox" id="cfg-magic-toggle"> 
+          <label for="cfg-magic-toggle" style="font-size:8px;">Habilitar Magias (Substitui Ação 3)</label>
+        </div>
+        <div class="grid-layout" style="margin-bottom: 12px; border-bottom: 1px solid #333; padding-bottom:10px;">
+           <div class="grid-row"><label>Nome da Aba</label><input type="text" id="cfg-magic-tab-name" placeholder="🔮 Magias"></div>
+           <div class="grid-row"><label>Cor Geral (HEX)</label><input type="text" id="cfg-magic-tab-color" placeholder="#d4f"></div>
+        </div>
+        <div id="magics-list" style="display:flex; flex-direction:column; gap:10px;"></div>
+      </div>
+    </div>
+
+    <!-- TAB 4: ITENS -->
+    <div class="tab-panel">
+      <div class="settings-section" style="background:transparent; border:none; padding:0;">
+        <h3 style="color:#aaa;">🎒 INVENTÁRIO (Expanda para editar)</h3>
+        <div id="items-list"></div>
+      </div>
+    </div>
+
+    <!-- TAB 5: BIBLIOTECA -->
+    <div class="tab-panel">
+      <div class="settings-section">
+        <h3>📚 EXPORTAR</h3>
+        <div style="display:flex; gap:4px; flex-wrap:wrap; margin-bottom:8px;">
+           <button class="btn-primary" style="padding:8px; font-size:7px; width:auto;" onclick="exportLib('all')">TODO O SAVE</button>
+           <button class="btn-primary" style="padding:8px; font-size:7px; width:auto;" onclick="exportLib('enemy')">INIMIGO ATUAL</button>
+        </div>
+        <div style="display:flex; gap:4px; align-items:center; margin-bottom:8px;">
+           <select id="lib-exp-item" class="field-input" style="width:auto; padding:4px;"></select>
+           <button class="btn-primary" style="padding:6px 12px; font-size:7px; width:auto;" onclick="exportLib('item')">EXPORTAR ITEM</button>
+        </div>
+        <div style="display:flex; gap:4px; align-items:center; margin-bottom:12px;">
+           <select id="lib-exp-magic" class="field-input" style="width:auto; padding:4px;"></select>
+           <button class="btn-primary" style="padding:6px 12px; font-size:7px; width:auto;" onclick="exportLib('magic')">EXPORTAR MAGIA</button>
+        </div>
+
+        <h3 style="margin-top:8px;">📥 IMPORTAR / CÓDIGO</h3>
+        <textarea id="lib-data" placeholder="Cole ou gere código aqui. Suporta inimigo, item, magia ou save completo." style="width:100%; height:80px; background:#000; color:#fff; border:2px solid #555; font-family:inherit; font-size:7px; padding:8px;"></textarea>
+        
+        <div style="display:flex; gap:8px; margin-top:8px; flex-wrap:wrap;">
+           <button class="btn-secondary" style="flex:1;" onclick="importLib()">IMPORTAR DA CAIXA</button>
+           <button class="btn-secondary" style="flex:1; border-color:#550099; color:#aa44ff;" onclick="libSaveShortcut()">💾 SALVAR ATALHO</button>
+        </div>
+        <div id="lib-msg" style="color:var(--yellow); font-size:7px; margin-top:5px; text-align:center;"></div>
+      </div>
+
+      <div class="settings-section" style="border-color:#330044;">
+        <h3 style="color:#cc44ff;">⚡ ATALHOS DO MESTRE</h3>
+        <p style="font-size:6px; color:#555; margin-bottom:8px; line-height:1.8;">Salve inimigos, itens e magias como atalhos. Toque em ENVIAR para carregar direto no jogo (e transmitir ao jogador se conectado).</p>
+        <div id="lib-shortcuts"></div>
+        <button class="btn-secondary" style="margin-top:8px; font-size:6px; border-color:#333;" onclick="buildLibShortcuts()">↺ ATUALIZAR LISTA</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="settings-footer">
+    <button class="btn-secondary" onclick="closeSettings()">VOLTAR</button>
+    <button class="btn-primary" onclick="saveSettings()">SALVAR</button>
+  </div>
+</div>
+
+<div id="gameover-screen" class="screen">
+  <div id="gameover-title">GAME OVER</div>
+  <div id="gameover-quote"></div>
+  <div style="display:flex; flex-direction:column; gap:12px; width:70%;">
+    <button class="btn-primary" onclick="continueGame()">CONTINUAR</button>
+    <button class="btn-secondary" onclick="hardReset()">RESETAR DADOS</button>
+  </div>
+</div>
+
+<div id="damage-popup"></div>
+<div id="hp-change-popup"></div>
+
+<script>
+// ─── ESTADO E LOCALSTORAGE ───
+const defaultState = {
+  name: 'FRISK', hp: 20, maxHp: 20, def: 0,
+  enemy: { name: 'Flowey', emoji: '👾', imgUrl: '', hp: 100, maxHp: 100, atk: 5, def: 2, dodge: 0, msgTurn1: '* Parece inofensivo.', msgVictory: 'NÃO DESISTA!', msgDeath: '* Flowey murchou.' },
+  items: Array.from({length: 20}, () => ({ name:'', msg:'', msgEquip:'', msgUnequip:'', hpDelta:0, selfDmg:0, dmgMinDelta:0, dmgMaxDelta:0, defDelta:0, spdDelta:0, repsDelta:0, buffTurns:0, consumable: false, consumed: false, equipable: false, equipped: false })),
+  actOptions: [
+     { name: 'Check', type: 'check', msg: '' },
+     { name: 'Elogiar', type: 'praise', msg: '' },
+     { name: 'Insultar', type: 'insult', msg: 'Seu bobão' },
+     { name: 'Conversar', type: 'talk', msg: '* Você tenta conversar.' }
+  ],
+  magicEnabled: false, magicTabName: '🔮 Magias', magicTabColor: '#e0aaff',
+  magics: Array.from({length: 4}, () => ({ name:'', msg:'', msgSuccess:'', msgPartial:'', msgMiss:'', dmgBase: 0, hpRegen: 0, hpCost: 0, cooldown: 0, color: '#d4f', mgType: 0, spd: 1.0, reps: 1 })),
+  dmgMin: 3, dmgMax: 10, atkSpeed: 1.0, atkReps: 1,
+  outOfBattle: false, currentSubmenu: null, attackActive: false, magicActive: false, currentMagicIdx: -1,
+  turnsPassed: 0, activeBuffs: [], magicCooldowns: [0,0,0,0],
+  sliderX: 0, sliderDir: 1, sliderSpeedBase: 1, animId: null,
+};
+
+let state = JSON.parse(JSON.stringify(defaultState));
+
+function loadData() {
+  const saved = localStorage.getItem('undertaleRPG_Data');
+  if(saved) {
+    const parsed = JSON.parse(saved);
+    state = { ...defaultState, ...parsed };
+    if(state.def === undefined) state.def = 0;
+    if(!state.enemy.dodge) state.enemy.dodge = 0;
+    if(!state.magicCooldowns) state.magicCooldowns = [0,0,0,0];
+    if(!state.enemy) state.enemy = JSON.parse(JSON.stringify(defaultState.enemy));
+    if(!state.actOptions || state.actOptions.length !== 4) state.actOptions = JSON.parse(JSON.stringify(defaultState.actOptions));
+    if(!state.magics || state.magics.length !== 4) state.magics = JSON.parse(JSON.stringify(defaultState.magics));
+    if(!state.items || state.items.length !== 20) state.items = JSON.parse(JSON.stringify(defaultState.items));
+    if(!state.activeBuffs) state.activeBuffs = [];
+  }
+}
+function hardReset() { if(confirm("Deseja apagar tudo e recomeçar?")) { localStorage.removeItem('undertaleRPG_Data'); location.reload(); } }
+
+// ─── INICIALIZAÇÃO ───
+function init() {
+  loadData();
+  populateLibSelects();
+  buildActsList();
+  buildItemsList();
+  buildMagicsList();
+  buildLibShortcuts();
+  applyOutOfBattleState();
+  renderBattle();
+}
+
+// ─── CONSTRUTORES DE LISTA (SETTINGS) ───
+function buildActsList() {
+   const list = document.getElementById('acts-list'); list.innerHTML = '';
+   for(let i=0; i<4; i++) {
+      const act = state.actOptions[i];
+      list.innerHTML += `
+      <div style="border: 2px solid #333; padding:8px; background:#111;">
+         <div class="grid-layout" style="margin-bottom:6px;">
+            <div class="grid-row"><label>Nome no Menu</label><input type="text" id="act-name-${i}" value="${act.name}"></div>
+            <div class="grid-row"><label>Tipo de Ação</label>
+               <select id="act-type-${i}">
+                  <option value="custom" ${act.type=='custom'?'selected':''}>Customizada</option>
+                  <option value="check" ${act.type=='check'?'selected':''}>Check (Vê Status)</option>
+                  <option value="praise" ${act.type=='praise'?'selected':''}>Elogiar</option>
+                  <option value="insult" ${act.type=='insult'?'selected':''}>Insultar</option>
+                  <option value="talk" ${act.type=='talk'?'selected':''}>Conversar</option>
+               </select>
+            </div>
+         </div>
+         <div class="grid-row"><label>Mensagem Customizada</label><textarea id="act-msg-${i}" class="field-input" style="height:30px;">${act.msg}</textarea></div>
+      </div>`;
+   }
+}
+
+function buildItemsList() {
+  const list = document.getElementById('items-list'); list.innerHTML = '';
+  for (let i = 0; i < 20; i++) {
+    const item = state.items[i]; const card = document.createElement('div'); card.className = 'item-card'; card.id = `item-card-${i}`;
+    const equipStr = item.equipped ? '<span style="color:var(--yellow); font-size:7px;">[E]</span>' : '';
+    const consumedStr = item.consumed ? ' <span style="color:#f55; font-size:7px;">(Gasto)</span>' : '';
+
+    card.innerHTML = `
+      <div class="item-card-header" onclick="toggleItemCard(${i})">
+        <span class="item-slot-num">${String(i+1).padStart(2,'0')}</span>
+        <input class="item-name-input" id="item-name-${i}" type="text" maxlength="16" value="${item.name}" placeholder="Espaço Vazio" onclick="event.stopPropagation()">
+        ${equipStr} ${consumedStr}
+      </div>
+      <div class="item-card-body">
+        <div class="checkbox-row">
+          <label><input type="checkbox" id="item-consumable-${i}" ${item.consumable?'checked':''}> Consumível</label>
+          <label><input type="checkbox" id="item-equipable-${i}" ${item.equipable?'checked':''}> Equipável</label>
+          ${item.consumed ? `<button class="btn-secondary" style="width:auto; padding:4px; font-size:6px;" onclick="restoreItem(${i})">Restaurar</button>` : ''}
+        </div>
+        <div style="display:flex; flex-direction:column; gap:4px;">
+          <label style="font-size:7px; color:#aaa;">💬 Msg ao usar:</label>
+          <textarea id="item-msg-${i}" class="field-input" style="height:30px;">${item.msg}</textarea>
+        </div>
+        <div class="grid-layout" style="grid-template-columns: 1fr 1fr;">
+           <div class="grid-row"><label>💬 Msg Equipar</label><input type="text" id="item-msgE-${i}" value="${item.msgEquip||''}"></div>
+           <div class="grid-row"><label>💬 Msg Desequipar</label><input type="text" id="item-msgU-${i}" value="${item.msgUnequip||''}"></div>
+        </div>
+        <div class="grid-layout" style="grid-template-columns: 1fr 1fr 1fr;">
+          <div class="grid-row"><label>Cura HP</label><input type="number" id="item-hp-${i}" value="${item.hpDelta}"></div>
+          <div class="grid-row"><label>Dano Proprio</label><input type="number" id="item-selfdmg-${i}" value="${item.selfDmg||0}"></div>
+          <div class="grid-row"><label>Buff Turnos</label><input type="number" id="item-buff-${i}" value="${item.buffTurns||0}" title="0 = Perm"></div>
+          <div class="grid-row"><label>ATK Min</label><input type="number" id="item-dmin-${i}" value="${item.dmgMinDelta}"></div>
+          <div class="grid-row"><label>ATK Max</label><input type="number" id="item-dmax-${i}" value="${item.dmgMaxDelta}"></div>
+          <div class="grid-row"><label>Defesa (DEF)</label><input type="number" id="item-def-${i}" value="${item.defDelta||0}"></div>
+          <div class="grid-row"><label>Vel. ATK</label><input type="number" step="0.1" id="item-spd-${i}" value="${item.spdDelta || 0}"></div>
+          <div class="grid-row" style="grid-column: span 2"><label>Reps ATK</label><input type="number" id="item-reps-${i}" value="${item.repsDelta || 0}"></div>
+        </div>
+      </div>`;
+    list.appendChild(card);
+  }
+}
+
+function restoreItem(i) { state.items[i].consumed = false; saveData(); buildItemsList(); }
+function toggleItemCard(i) { document.getElementById(`item-card-${i}`).classList.toggle('expanded'); }
+
+function buildMagicsList() {
+  const list = document.getElementById('magics-list'); list.innerHTML = '';
+  for (let i = 0; i < 4; i++) {
+    const magic = state.magics[i];
+    list.innerHTML += `
+      <div class="item-card expanded" style="border-color:var(--purple-border);">
+        <div class="item-card-header" style="cursor:default; background:var(--purple);">
+          <span class="item-slot-num" style="color:#fff;">0${i+1}</span>
+          <input class="item-name-input" id="magic-name-${i}" type="text" maxlength="16" value="${magic.name}" placeholder="Nome da Magia">
+        </div>
+        <div class="item-card-body">
+          <div style="display:flex; flex-direction:column; gap:4px;">
+            <label style="font-size:7px; color:#aaa;">💬 Mensagem Base:</label>
+            <textarea id="magic-msg-${i}" class="field-input" style="height:25px;">${magic.msg}</textarea>
+            <label style="font-size:7px; color:#aaa;">💬 Acerto (Sucesso):</label>
+            <textarea id="magic-msgsuc-${i}" class="field-input" style="height:25px;">${magic.msgSuccess||''}</textarea>
+            <label style="font-size:7px; color:#aaa;">💬 Acerto Parcial:</label>
+            <textarea id="magic-msgpar-${i}" class="field-input" style="height:25px;">${magic.msgPartial||''}</textarea>
+            <label style="font-size:7px; color:#aaa;">💬 Erro / Miss:</label>
+            <textarea id="magic-msgmis-${i}" class="field-input" style="height:25px;">${magic.msgMiss||''}</textarea>
+          </div>
+          <div class="grid-layout">
+            <div class="grid-row"><label>Dano Base</label><input type="number" id="magic-dmg-${i}" value="${magic.dmgBase}"></div>
+            <div class="grid-row"><label>Cura (HP)</label><input type="number" id="magic-hp-${i}" value="${magic.hpRegen}"></div>
+            <div class="grid-row"><label>Custo de HP</label><input type="number" id="magic-hpcost-${i}" value="${magic.hpCost||0}"></div>
+            <div class="grid-row"><label>Recarga (CD)</label><input type="number" id="magic-cd-${i}" value="${magic.cooldown||0}"></div>
+            <div class="grid-row" style="grid-column:span 2"><label>Cor do Dano (HEX)</label><input type="text" id="magic-color-${i}" value="${magic.color||'#d4f'}"></div>
+            <div class="grid-row" style="grid-column:span 2"><label>Minigame (0 a 5)</label><input type="number" min="0" max="5" id="magic-mg-${i}" value="${magic.mgType || 0}" title="0=Nenhum, 1=Mira, 2=Conjurar, 3=Seta, 4=MASH, 5=Pêndulo"></div>
+            <div class="grid-row"><label>Velocidade</label><input type="number" step="0.1" id="magic-spd-${i}" value="${magic.spd || 1.0}"></div>
+            <div class="grid-row"><label>Repetições</label><input type="number" id="magic-reps-${i}" value="${magic.reps || 1}"></div>
+          </div>
+        </div>
+      </div>`;
+  }
+}
+
+// ─── BIBLIOTECA ───
+function populateLibSelects() {
+    const isel = document.getElementById('lib-exp-item'); const msel = document.getElementById('lib-exp-magic');
+    if(!isel || isel.options.length > 0) return;
+    for(let i=0; i<20; i++) isel.innerHTML += `<option value="${i}">Item ${String(i+1).padStart(2,'0')}</option>`;
+    for(let i=0; i<4; i++) msel.innerHTML += `<option value="${i}">Magia 0${i+1}</option>`;
+}
+
+function exportLib(type) {
+    let obj = {};
+    if(type === 'all') obj = state;
+    else if(type === 'enemy') obj = { _libType: 'enemy', data: state.enemy };
+    else if(type === 'item') { let idx = document.getElementById('lib-exp-item').value; obj = { _libType: 'item', data: state.items[idx] }; }
+    else if(type === 'magic') { let idx = document.getElementById('lib-exp-magic').value; obj = { _libType: 'magic', data: state.magics[idx] }; }
+    
+    const txtArea = document.getElementById('lib-data'); txtArea.value = JSON.stringify(obj, null, 2);
+    document.getElementById('lib-msg').textContent = "Código gerado! Copie o texto na caixa acima.";
+    document.getElementById('lib-msg').style.color = "var(--yellow)";
+    txtArea.select(); document.execCommand('copy');
+}
+
+function importLib() {
+  try {
+    const text = document.getElementById('lib-data').value;
+    const parsed = JSON.parse(text);
+    applyParsedLib(parsed);
+    saveData(); populateSettingsInputs(); renderBattle();
+    libMsg("✅ Importado com sucesso!", "var(--green)");
+  } catch(e) { libMsg("Erro: " + e.message, "red"); }
+}
+
+// ─── RENDERIZAÇÃO ───
+function renderBattle() {
+  document.getElementById('char-name-display').textContent = state.name;
+  document.getElementById('def-numbers').textContent = `DEF ${state.def}`;
+  const ez = document.getElementById('enemy-sprite');
+  if(state.enemy.imgUrl) ez.innerHTML = `<img src="${state.enemy.imgUrl}" alt="Enemy">`;
+  else ez.textContent = state.enemy.emoji;
+  
+  updateHpBar(); updateEnemyHpBar();
+}
+
+function updateHpBar() {
+  const pct = Math.max(0, Math.min(1, state.hp / state.maxHp));
+  const bar = document.getElementById('hp-bar-inner');
+  bar.style.width = (pct * 100) + '%';
+  bar.style.background = pct > 0.5 ? '#ffff00' : pct > 0.25 ? '#ff8800' : '#ff0000';
+  document.getElementById('hp-numbers').textContent = `${state.hp} / ${state.maxHp}`;
+}
+
+function updateEnemyHpBar() {
+   const pct = Math.max(0, Math.min(1, state.enemy.hp / state.enemy.maxHp));
+   document.getElementById('enemy-hp-txt').textContent = `HP ${state.enemy.hp}/${state.enemy.maxHp}`;
+   const fill = document.getElementById('enemy-hp-fill');
+   fill.style.width = (pct * 100) + '%';
+   fill.style.background = pct > 0.5 ? '#00ff00' : pct > 0.25 ? '#ffff00' : '#ff0000';
+}
+
+// ─── SISTEMA DE TURNOS ───
+function endTurn() {
+   if(state.outOfBattle) return;
+   state.turnsPassed++;
+   
+   if(state.activeBuffs && state.activeBuffs.length > 0) {
+      state.activeBuffs.forEach(b => b.turns--);
+      state.activeBuffs.filter(b => b.turns === 0).forEach(b => { state.dmgMin -= b.dmgMin; state.dmgMax -= b.dmgMax; state.def -= b.def; });
+      state.activeBuffs = state.activeBuffs.filter(b => b.turns > 0);
+      document.getElementById('def-numbers').textContent = `DEF ${state.def}`;
+   }
+   
+   for(let i=0; i<4; i++) { if(state.magicCooldowns[i] > 0) state.magicCooldowns[i]--; }
+
+   setTimeout(() => {
+      let turnMsg = `* ${state.enemy.name} se prepara.`;
+      if(state.turnsPassed === 1 && state.enemy.msgTurn1) turnMsg = state.enemy.msgTurn1;
+      setDialogue(turnMsg);
+   }, 1500);
+}
+
+// ─── GAMEOVER E VITÓRIA ───
+function checkStateEvents() {
+  if(state.hp <= 0) {
+    document.getElementById('battle-screen').classList.remove('active');
+    document.getElementById('gameover-screen').classList.add('active');
+    document.getElementById('gameover-quote').textContent = state.enemy.msgVictory || `Não desista agora, ${state.name}!`;
+    return true;
+  }
+  if(state.enemy.hp <= 0) {
+     if(state.enemy.msgDeath) setDialogue(state.enemy.msgDeath);
+     else setDialogue(`* VOCÊ VENCEU! Você ganhou 0 EXP e 0 de Ouro.`);
+     document.getElementById('action-buttons').style.pointerEvents = 'none';
+     setTimeout(() => {
+         document.getElementById('action-buttons').style.pointerEvents = 'auto';
+         state.outOfBattle = true; saveData(); applyOutOfBattleState();
+     }, 3000); 
+     return true;
+  }
+  return false;
+}
+
+function continueGame() {
+  state.hp = state.maxHp; saveData();
+  document.getElementById('gameover-screen').classList.remove('active');
+  document.getElementById('battle-screen').classList.add('active');
+  updateHpBar(); setDialogue(`* A determinação te enche de força.`);
+}
+
+// ─── MECÂNICAS DE HP ───
+function quickHp(delta) {
+  state.hp = Math.max(0, Math.min(state.maxHp, state.hp + delta)); updateHpBar();
+  popText(delta > 0 ? `+${delta}` : `${delta}`, delta > 0 ? '#44ff88' : '#ff5555', 'hp-change-popup');
+  saveData(); checkStateEvents();
+}
+
+function quickEnemyHp(delta) {
+  state.enemy.hp = Math.max(0, Math.min(state.enemy.maxHp, state.enemy.hp + delta)); updateEnemyHpBar();
+  if(delta < 0) showDamage(Math.abs(delta));
+  saveData(); checkStateEvents();
+}
+
+function popText(txt, color, id) {
+  const popup = document.getElementById(id); popup.textContent = txt; popup.style.color = color;
+  popup.classList.remove('show'); void popup.offsetWidth; popup.classList.add('show');
+}
+
+function toggleOOB() { state.outOfBattle = !state.outOfBattle; saveData(); applyOutOfBattleState(); }
+
+function applyOutOfBattleState() {
+  const btn = document.getElementById('oob-btn'); const acts = document.getElementById('action-buttons');
+  const enemyZone = document.getElementById('enemy-zone'); const enemyCtrl = document.getElementById('enemy-controls');
+  if(state.outOfBattle) {
+    btn.classList.add('active'); acts.style.display = 'none'; enemyZone.style.display = 'none'; enemyCtrl.style.display = 'none';
+    closeSubmenu(); document.getElementById('attack-box').classList.remove('active'); document.getElementById('magic-box').style.display = 'none';
+    setDialogue(`* Você está explorando pacificamente...`);
+  } else {
+    btn.classList.remove('active'); acts.style.display = 'grid'; enemyZone.style.display = 'flex'; enemyCtrl.style.display = 'flex';
+    setDialogue(`* ${state.enemy.name} bloqueia o caminho!`);
+  }
+}
+
+// ─── TEXTOS (TYPEWRITER) ───
+let typingTimer = null;
+function setDialogue(text) {
+  clearTimeout(typingTimer);
+  const el = document.getElementById('dialogue-text'); el.textContent = ''; let i = 0;
+  function type() { if (i < text.length) { el.textContent += text[i++]; typingTimer = setTimeout(type, 30); } }
+  type();
+}
+
+// ─── SUBMENUS ───
+function closeSubmenu() {
+  const sub = document.getElementById('submenu');
+  sub.classList.remove('active'); sub.style.borderColor = 'var(--white)';
+  document.getElementById('submenu-title').style.color = '#000'; state.currentSubmenu = null;
+}
+
+function openItems() {
+  if (state.attackActive || state.magicActive) return;
+  if (state.currentSubmenu === 'items') { closeSubmenu(); return; }
+  closeSubmenu(); state.currentSubmenu = 'items';
+  document.getElementById('submenu-title').textContent = '🎒 ITENS';
+  const content = document.getElementById('submenu-content'); content.innerHTML = '';
+
+  const validItems = state.items.map((it, idx) => ({...it, idx})).filter(it => it.name.trim() && !it.consumed);
+  if (validItems.length === 0) content.innerHTML = '<div class="submenu-item empty" style="grid-column:span 2">Sem itens.</div>';
+  else {
+    validItems.forEach(item => {
+      const div = document.createElement('div'); div.className = 'submenu-item';
+      div.innerHTML = `${item.name} ${item.equipped ? '<span style="color:var(--yellow)">[E]</span>' : ''}`;
+      div.onclick = () => useItem(state.items[item.idx], item.idx); content.appendChild(div);
+    });
+  }
+  document.getElementById('submenu').classList.add('active'); setDialogue(`* Escolha um item.`);
+}
+
+function useItem(item, realIdx) {
+  closeSubmenu(); let effects = []; let isEquipping = false; let takesTurn = true;
+
+  if (item.equipable) {
+    item.equipped = !item.equipped; isEquipping = item.equipped; const mult = isEquipping ? 1 : -1;
+    if (item.dmgMinDelta) state.dmgMin = Math.max(0, state.dmgMin + (item.dmgMinDelta * mult));
+    if (item.dmgMaxDelta) state.dmgMax = Math.max(0, state.dmgMax + (item.dmgMaxDelta * mult));
+    if (item.spdDelta) state.atkSpeed = Math.max(0.1, state.atkSpeed + (item.spdDelta * mult));
+    if (item.repsDelta) state.atkReps = Math.max(1, state.atkReps + (item.repsDelta * mult));
+    if (item.defDelta) state.def = Math.max(0, state.def + (item.defDelta * mult));
+    takesTurn = false; 
+  } else {
+    if(item.consumable) item.consumed = true;
+    if (item.hpDelta !== 0) {
+      const before = state.hp; state.hp = Math.max(0, Math.min(state.maxHp, state.hp + item.hpDelta));
+      const diff = state.hp - before; if (diff !== 0) effects.push(diff > 0 ? `+${diff} HP` : `${diff} HP`);
+    }
+    if (item.selfDmg > 0) { state.hp -= item.selfDmg; popText(`-${item.selfDmg}`, '#f00', 'hp-change-popup'); }
+    if (item.buffTurns > 0) {
+       state.activeBuffs.push({ turns: item.buffTurns, dmgMin: item.dmgMinDelta, dmgMax: item.dmgMaxDelta, def: item.defDelta||0 });
+       state.dmgMin += item.dmgMinDelta; state.dmgMax += item.dmgMaxDelta; state.def += (item.defDelta||0);
+       effects.push(`Buffs ativos por ${item.buffTurns} turnos!`);
+    } else {
+       if(item.dmgMinDelta) state.dmgMin += item.dmgMinDelta; if(item.dmgMaxDelta) state.dmgMax += item.dmgMaxDelta;
+       if(item.defDelta) state.def += item.defDelta;
+    }
+  }
+
+  updateHpBar(); document.getElementById('def-numbers').textContent = `DEF ${state.def}`;
+  saveData(); if(checkStateEvents()) return;
+
+  let msg = item.msg.trim() ? `* ${item.msg}` : `* Você usou ${item.name}!`;
+  if(item.equipable) {
+     if(isEquipping) msg = item.msgEquip.trim() ? `* ${item.msgEquip}` : `* Você equipou ${item.name}.`;
+     else msg = item.msgUnequip.trim() ? `* ${item.msgUnequip}` : `* Você desequipou ${item.name}.`;
+  }
+  if (effects.length && !item.equipable) msg += `\n  [${effects.join(' / ')}]`;
+  setDialogue(msg); if(takesTurn) endTurn();
+}
+
+function openAct() {
+  if (state.attackActive || state.magicActive) return;
+  if (state.currentSubmenu === 'act') { closeSubmenu(); return; }
+  closeSubmenu(); state.currentSubmenu = 'act';
+  document.getElementById('submenu-title').textContent = `✨ AGIR`;
+  const content = document.getElementById('submenu-content'); content.innerHTML = '';
+
+  state.actOptions.forEach((opt, idx) => {
+    const div = document.createElement('div'); div.className = 'submenu-item';
+    if (idx === 2 && state.magicEnabled) {
+      div.innerHTML = `<span style="color:${state.magicTabColor}">${state.magicTabName}</span>`; div.onclick = () => openMagics(); 
+    } else {
+      div.textContent = opt.name || '---';
+      if(opt.name) div.onclick = () => doAct(opt);
+    }
+    content.appendChild(div);
+  });
+  document.getElementById('submenu').classList.add('active'); setDialogue(`* O que fazer com ${state.enemy.name}?`);
+}
+
+function doAct(opt) {
+  closeSubmenu(); let text = ``;
+  if(opt.type === 'check') text = `* ${state.enemy.name} - ATK ${state.enemy.atk} DEF ${state.enemy.def}\n${opt.msg||'* ...'}`;
+  else if(opt.type === 'praise') { const elogios = ["* Você diz que ele tem um belo sorriso.", "* Você levanta os polegares.", "* Você diz que ele está ótimo hoje."]; text = opt.msg || elogios[Math.floor(Math.random()*elogios.length)]; }
+  else if(opt.type === 'insult') text = opt.msg || `* Você chama ele de bobão.`;
+  else if(opt.type === 'talk') text = (opt.msg || '* Você tenta conversar.').replace('{nome do inimigo}', state.enemy.name);
+  else text = opt.msg || `* Você usa ${opt.name}.`;
+  setDialogue(text); endTurn();
+}
+
+function openMagics() {
+  state.currentSubmenu = 'magics'; const sub = document.getElementById('submenu');
+  sub.style.borderColor = state.magicTabColor; document.getElementById('submenu-title').style.color = state.magicTabColor;
+  document.getElementById('submenu-title').textContent = state.magicTabName.toUpperCase();
+  
+  const content = document.getElementById('submenu-content'); content.innerHTML = '';
+  const validMagics = state.magics.filter(m => m.name.trim());
+  if(validMagics.length === 0) content.innerHTML = '<div class="submenu-item empty" style="grid-column:span 2">Vazio.</div>';
+  else {
+    validMagics.forEach((magic, idx) => {
+      const div = document.createElement('div'); div.className = 'submenu-item'; 
+      const cd = state.magicCooldowns[idx] || 0;
+      if(cd > 0) {
+         div.classList.add('disabled');
+         div.innerHTML = `${magic.name} <span style="font-size:6px;">[CD:${cd}]</span>`;
+      } else {
+         div.style.color = state.magicTabColor;
+         div.innerHTML = `${magic.name} ${magic.hpCost > 0 ? `<span style="color:#f55; font-size:6px;">-${magic.hpCost}HP</span>` : ''}`;
+         div.onclick = () => castMagic(magic, idx); 
+      }
+      content.appendChild(div);
+    });
+  }
+}
+
+function doMercy() {
+  if (state.attackActive || state.magicActive) return; closeSubmenu();
+  setDialogue(`* Você tenta poupar ${state.enemy.name}.`); endTurn();
+}
+
+function doFlee() {
+  if (state.attackActive || state.magicActive) return; closeSubmenu();
+  setDialogue(`* Você fugiu!`);
+}
+
+// ─── ATAQUE FÍSICO ───
+let atkHits = 0; let atkTotalDmg = 0; let atkCurrentRep = 0; let atkTargetReps = 1;
+
+function startAttack() {
+  if (state.attackActive || state.magicActive) return; closeSubmenu(); state.attackActive = true;
+  atkTargetReps = state.atkReps;
+  atkTargetReps = Math.max(1, atkTargetReps); state.sliderSpeedBase = Math.max(0.1, state.atkSpeed);
+
+  atkHits = 0; atkTotalDmg = 0; atkCurrentRep = 0;
+  document.getElementById('attack-box').classList.add('active');
+  document.getElementById('minigame-result').textContent = `ATAQUE (1/${atkTargetReps})`;
+  setDialogue(`* Atacar ${state.enemy.name}!`); setupMinigame();
+}
+
+function setupMinigame() {
+  const track = document.getElementById('minigame-track'); const hitZone = document.getElementById('hit-zone'); const slider = document.getElementById('slider');
+  const trackW = track.offsetWidth;
+  const zoneW = Math.floor(trackW * (0.15 + Math.random() * 0.10)); const zoneX = Math.floor(Math.random() * (trackW - zoneW));
+  hitZone.style.left = zoneX + 'px'; hitZone.style.width = zoneW + 'px';
+  state.sliderX = 0; state.sliderDir = 1; state.sliderSpeed = trackW * 0.005 * state.sliderSpeedBase; slider.style.left = '0px';
+
+  track.onpointerdown = (e) => { e.preventDefault(); if (!state.attackActive) return; resolveAttack(state.sliderX, zoneX, zoneX + zoneW); };
+  cancelAnimationFrame(state.animId); animateSlider();
+}
+
+function animateSlider() {
+  if (!state.attackActive) return;
+  const trackW = document.getElementById('minigame-track').offsetWidth - 8;
+  state.sliderX += state.sliderDir * state.sliderSpeed;
+  if (state.sliderX >= trackW) { state.sliderX = trackW; state.sliderDir = -1; }
+  if (state.sliderX <= 0) { state.sliderX = 0; state.sliderDir = 1; }
+  document.getElementById('slider').style.left = state.sliderX + 'px'; state.animId = requestAnimationFrame(animateSlider);
+}
+
+function resolveAttack(sliderX, zoneLeft, zoneRight) {
+  cancelAnimationFrame(state.animId); document.getElementById('minigame-track').onpointerdown = null;
+  const partial = (sliderX + 8 >= zoneLeft && sliderX <= zoneRight);
+  
+  if (partial) {
+    let isDodge = (Math.random() * 100) < state.enemy.dodge;
+    if (isDodge) {
+       document.getElementById('minigame-result').textContent = `ESQUIVOU!`;
+       showDamage("MISS", '#888');
+    } else {
+       const precision = 1 - Math.abs((sliderX + 4) - (zoneLeft + (zoneRight - zoneLeft) / 2)) / ((zoneRight - zoneLeft) / 2 + 30);
+       let dmg = Math.floor(state.dmgMin + Math.max(0, precision) * (state.dmgMax - state.dmgMin));
+       dmg = Math.max(0, dmg - state.enemy.def);
+       atkTotalDmg += dmg; atkHits++; showDamage(dmg);
+       document.getElementById('minigame-result').textContent = `ACERTOU!`;
+       // Shake enemy
+       const sprite = document.getElementById('enemy-sprite');
+       sprite.classList.remove('shake'); void sprite.offsetWidth; sprite.classList.add('shake');
+    }
+  } else { document.getElementById('minigame-result').textContent = `ERROU`; }
+
+  atkCurrentRep++;
+  if (atkCurrentRep < atkTargetReps) {
+     setTimeout(() => { document.getElementById('minigame-result').textContent = `ATAQUE (${atkCurrentRep+1}/${atkTargetReps})`; setupMinigame(); }, 400);
+  } else {
+     state.attackActive = false; setTimeout(() => { document.getElementById('attack-box').classList.remove('active'); }, 500);
+     if (atkHits > 0) {
+        setDialogue(`* ACERTOU ${atkHits} VEZ(ES)!\n  ${atkTotalDmg} de dano em ${state.enemy.name}!`);
+        state.enemy.hp = Math.max(0, state.enemy.hp - atkTotalDmg); updateEnemyHpBar();
+     } else setDialogue(`* NENHUM ACERTO!\n  ${state.enemy.name} não sofreu dano.`);
+     
+     if(!checkStateEvents()) endTurn();
+  }
+}
+
+// ─── SISTEMA DE MAGIAS ───
+let magicHits = 0; let magicCurrentRep = 0; let currentMagicObj = null;
+
+function castMagic(magic, idx) {
+  closeSubmenu(); currentMagicObj = magic; state.currentMagicIdx = idx;
+  
+  if(magic.hpCost > 0) {
+     state.hp -= magic.hpCost; popText(`-${magic.hpCost}`, '#f00', 'hp-change-popup'); updateHpBar();
+     if(checkStateEvents()) return;
+  }
+  if(magic.cooldown > 0) state.magicCooldowns[idx] = magic.cooldown + 1;
+
+  if (magic.mgType == 0 || !magic.mgType) { applyMagicEffects(1); return; }
+  state.magicActive = true; magicHits = 0; magicCurrentRep = 0;
+  
+  document.getElementById('magic-box').style.display = 'flex';
+  document.getElementById('magic-box').style.borderColor = magic.color || 'var(--purple-border)';
+  setDialogue(`* Preparando ${magic.name}...`); setupMagicMinigame();
+}
+
+function setupMagicMinigame() {
+   document.getElementById('magic-mg-title').textContent = `${currentMagicObj.name} - Repetição ${magicCurrentRep+1}/${currentMagicObj.reps || 1}`;
+   const area = document.getElementById('magic-mg-area'); area.innerHTML = '';
+   const type = currentMagicObj.mgType; const spd = currentMagicObj.spd || 1.0;
+
+   if (type == 1) setupMagicAim(area, spd);
+   else if (type == 2) setupMagicHold(area, spd);
+   else if (type == 3) setupMagicSeq(area, spd);
+   else if (type == 4) setupMagicMash(area, spd);
+   else if (type == 5) setupMagicTiming(area, spd);
+}
+
+function resolveMagicMinigame(success) {
+   cancelAnimationFrame(state.animId); const area = document.getElementById('magic-mg-area'); area.style.pointerEvents = 'none';
+   if(success) magicHits++;
+   document.getElementById('magic-mg-result').textContent = success ? "SUCESSO!" : "FALHOU!";
+   
+   magicCurrentRep++;
+   setTimeout(() => {
+     area.style.pointerEvents = 'auto'; document.getElementById('magic-mg-result').textContent = "";
+     if(magicCurrentRep < (currentMagicObj.reps || 1)) setupMagicMinigame();
+     else { document.getElementById('magic-box').style.display = 'none'; state.magicActive = false; let multiplier = magicHits / (currentMagicObj.reps || 1); applyMagicEffects(multiplier); }
+   }, 500);
+}
+
+function applyMagicEffects(multiplier) {
+  const dmg = Math.floor((currentMagicObj.dmgBase) * multiplier);
+  const heal = Math.floor((currentMagicObj.hpRegen) * multiplier);
+  
+  if (heal > 0) { state.hp = Math.min(state.maxHp, state.hp + heal); updateHpBar(); saveData(); }
+  
+  if (dmg > 0) {
+      let isDodge = (Math.random() * 100) < state.enemy.dodge;
+      if (isDodge) { showDamage("MISS", '#888'); }
+      else {
+          let finalDmg = Math.max(0, dmg - state.enemy.def);
+          state.enemy.hp = Math.max(0, state.enemy.hp - finalDmg); updateEnemyHpBar();
+          showDamage(finalDmg, currentMagicObj.color || '#d4f');
+          const sprite = document.getElementById('enemy-sprite');
+          sprite.classList.remove('shake'); void sprite.offsetWidth; sprite.classList.add('shake');
+      }
+  }
+
+  let text = currentMagicObj.msg.trim() ? `* ${currentMagicObj.msg}` : `* Você usou ${currentMagicObj.name}!`;
+  
+  if(currentMagicObj.mgType > 0) {
+     if(multiplier === 1 && currentMagicObj.msgSuccess) text = `* ${currentMagicObj.msgSuccess}`;
+     else if(multiplier < 1 && multiplier > 0 && currentMagicObj.msgPartial) text = `* ${currentMagicObj.msgPartial}`;
+     else if(multiplier === 0 && currentMagicObj.msgMiss) text = `* ${currentMagicObj.msgMiss}`;
+  }
+
+  setDialogue(text);
+  if(!checkStateEvents()) endTurn();
+}
+
+function setupMagicAim(area, spd) {
+   area.innerHTML = `<div class="aim-circle-outer" id="aim-btn"><div class="aim-zone"></div><div class="aim-circle-inner" id="aim-inner"></div></div>`;
+   const btn = document.getElementById('aim-btn'); const inner = document.getElementById('aim-inner'); let scale = 0;
+   btn.onpointerdown = () => { if(!state.magicActive) return; btn.onpointerdown = null; const success = (scale >= 80 && scale <= 120); inner.style.background = success ? '#0f0' : '#f00'; resolveMagicMinigame(success); };
+   function anim() { if(!state.magicActive) return; scale += 1.5 * spd; if (scale > 150) { inner.style.background = '#f00'; resolveMagicMinigame(false); return; } inner.style.width = scale + '%'; inner.style.height = scale + '%'; state.animId = requestAnimationFrame(anim); }
+   state.animId = requestAnimationFrame(anim);
+}
+
+function setupMagicHold(area, spd) {
+   const zoneW = 20 + Math.random() * 20; const zoneLeft = 30 + Math.random() * 40; 
+   area.innerHTML = `<div style="width:100%;"><div class="hold-bar-container" id="hold-btn"><div class="hold-target-zone" style="left:${zoneLeft}%; width:${zoneW}%;"></div><div class="hold-fill" id="hold-fill"></div></div><div style="font-size:6px; margin-top:4px; text-align:center;">Segure e solte na área verde</div></div>`;
+   const btn = document.getElementById('hold-btn'); const fill = document.getElementById('hold-fill'); let progress = 0; let holding = false;
+   btn.onpointerdown = (e) => { e.preventDefault(); holding = true; };
+   btn.onpointerup = (e) => { e.preventDefault(); if(!holding) return; holding = false; btn.onpointerdown = null; btn.onpointerup = null; btn.onpointerleave = null; const success = (progress >= zoneLeft && progress <= zoneLeft + zoneW); fill.style.background = success ? '#0f0' : '#f00'; resolveMagicMinigame(success); };
+   btn.onpointerleave = btn.onpointerup;
+   function anim() { if(!state.magicActive) return; if(holding) { progress += 0.8 * spd; if(progress > 100) progress = 100; fill.style.width = progress + '%'; } state.animId = requestAnimationFrame(anim); }
+   state.animId = requestAnimationFrame(anim);
+}
+
+function setupMagicSeq(area, spd) {
+   const arrows = ['⬅️', '⬆️', '⬇️', '➡️']; const target = arrows[Math.floor(Math.random() * arrows.length)];
+   area.innerHTML = `<div class="seq-container"><div class="seq-target" id="seq-target">${target}</div><div class="seq-buttons">${arrows.map((a, i) => `<button class="seq-btn" id="seq-btn-${i}">${a}</button>`).join('')}</div><div style="width:100%; height:4px; background:#333; margin-top:4px;"><div id="seq-timer" style="width:100%; height:100%; background:#fff;"></div></div></div>`;
+   let timeLeft = 100;
+   for(let i=0; i<4; i++) { document.getElementById(`seq-btn-${i}`).onpointerdown = () => { if(arrows[i] === target) resolveMagicMinigame(true); else resolveMagicMinigame(false); } }
+   function anim() { if(!state.magicActive) return; timeLeft -= 1.2 * spd; document.getElementById('seq-timer').style.width = Math.max(0, timeLeft) + '%'; if(timeLeft <= 0) resolveMagicMinigame(false); else state.animId = requestAnimationFrame(anim); }
+   state.animId = requestAnimationFrame(anim);
+}
+
+function setupMagicMash(area, spd) {
+   area.innerHTML = `<div class="mash-container"><div style="font-size:7px;">APERTE RÁPIDO!</div><div class="mash-prog"><div class="mash-fill" id="mash-fill"></div></div><button class="mash-btn" id="mash-btn">ATACAR</button></div>`;
+   let val = 0; let timeLeft = 100; const fill = document.getElementById('mash-fill');
+   document.getElementById('mash-btn').onpointerdown = (e) => { e.preventDefault(); val += 8; if(val>100) val=100; fill.style.width = val+'%'; };
+   function anim() {
+      if(!state.magicActive) return; timeLeft -= 1.0 * spd; val -= 0.5; if(val<0) val=0;
+      fill.style.width = val + '%';
+      if(timeLeft <= 0) resolveMagicMinigame(val >= 80); else state.animId = requestAnimationFrame(anim);
+   }
+   state.animId = requestAnimationFrame(anim);
+}
+
+function setupMagicTiming(area, spd) {
+   area.innerHTML = `<div style="width:100%; height:20px; background:#111; border:2px solid #fff; position:relative;" id="timing-track">
+       <div style="position:absolute; height:100%; width:20%; background:rgba(0,255,0,0.5); left:40%;"></div>
+       <div id="timing-cursor" style="position:absolute; height:100%; width:4px; background:#fff; left:0%;"></div>
+   </div><div style="font-size:7px; text-align:center; margin-top:6px;">Toque na zona central!</div>`;
+   let pos = 0; let dir = 1; let stopped = false;
+   area.onpointerdown = () => {
+       if(!state.magicActive || stopped) return; stopped = true;
+       const success = (pos >= 40 && pos <= 60);
+       document.getElementById('timing-cursor').style.background = success ? '#0f0' : '#f00';
+       resolveMagicMinigame(success);
+   };
+   function anim() {
+       if(!state.magicActive || stopped) return;
+       pos += 2 * spd * dir;
+       if(pos > 100) { pos = 100; dir = -1; }
+       if(pos < 0) { pos = 0; dir = 1; }
+       document.getElementById('timing-cursor').style.left = pos + '%';
+       state.animId = requestAnimationFrame(anim);
+   }
+   state.animId = requestAnimationFrame(anim);
+}
+
+function showDamage(dmg, color = 'var(--red)') {
+  const popup = document.getElementById('damage-popup');
+  popup.textContent = dmg > 0 ? `-${dmg}` : dmg; 
+  popup.style.color = color; popup.classList.remove('show');
+  void popup.offsetWidth; popup.classList.add('show');
+}
+
+// ─── CONFIGURAÇÕES ───
+function switchTab(idx) {
+  const panels = document.querySelectorAll('.tab-panel'); const tabs = document.querySelectorAll('.settings-tab');
+  panels.forEach((p, i) => p.classList.toggle('active', i === idx)); tabs.forEach((t, i) => t.classList.toggle('active', i === idx));
+  document.getElementById('settings-panels').scrollTop = 0;
+}
+
+function populateSettingsInputs() {
+  document.getElementById('cfg-name').value = state.name;
+  document.getElementById('cfg-maxhp').value = state.maxHp;
+  document.getElementById('cfg-def').value = state.def;
+  document.getElementById('cfg-dmg-min').value = state.dmgMin;
+  document.getElementById('cfg-dmg-max').value = state.dmgMax;
+  document.getElementById('cfg-atk-speed').value = state.atkSpeed;
+  document.getElementById('cfg-atk-reps').value = state.atkReps;
+  
+  document.getElementById('cfg-enemy-name').value = state.enemy.name;
+  document.getElementById('cfg-enemy-hp').value = state.enemy.hp;
+  document.getElementById('cfg-enemy-maxhp').value = state.enemy.maxHp;
+  document.getElementById('cfg-enemy-atk').value = state.enemy.atk;
+  document.getElementById('cfg-enemy-def').value = state.enemy.def;
+  document.getElementById('cfg-enemy-dodge').value = state.enemy.dodge || 0;
+  document.getElementById('cfg-enemy-img').value = state.enemy.imgUrl;
+  document.getElementById('cfg-enemy-msg-turn1').value = state.enemy.msgTurn1;
+  document.getElementById('cfg-enemy-msg-victory').value = state.enemy.msgVictory;
+  document.getElementById('cfg-enemy-msg-death').value = state.enemy.msgDeath;
+  
+  document.getElementById('cfg-enemy-emoji').value = '';
+  document.querySelectorAll('.emoji-choice').forEach(el => {
+    el.classList.toggle('selected', el.dataset.emoji === state.enemy.emoji);
+  });
+
+  for(let i = 0; i < 4; i++) {
+     document.getElementById(`act-name-${i}`).value = state.actOptions[i].name;
+     document.getElementById(`act-type-${i}`).value = state.actOptions[i].type;
+     document.getElementById(`act-msg-${i}`).value = state.actOptions[i].msg;
+  }
+
+  document.getElementById('cfg-magic-toggle').checked = state.magicEnabled;
+  document.getElementById('cfg-magic-tab-name').value = state.magicTabName;
+  document.getElementById('cfg-magic-tab-color').value = state.magicTabColor;
+
+  for (let i = 0; i < 4; i++) {
+    document.getElementById(`magic-name-${i}`).value = state.magics[i].name;
+    document.getElementById(`magic-msg-${i}`).value = state.magics[i].msg;
+    document.getElementById(`magic-msgsuc-${i}`).value = state.magics[i].msgSuccess || '';
+    document.getElementById(`magic-msgpar-${i}`).value = state.magics[i].msgPartial || '';
+    document.getElementById(`magic-msgmis-${i}`).value = state.magics[i].msgMiss || '';
+    document.getElementById(`magic-dmg-${i}`).value = state.magics[i].dmgBase;
+    document.getElementById(`magic-hp-${i}`).value = state.magics[i].hpRegen;
+    document.getElementById(`magic-hpcost-${i}`).value = state.magics[i].hpCost || 0;
+    document.getElementById(`magic-cd-${i}`).value = state.magics[i].cooldown || 0;
+    document.getElementById(`magic-color-${i}`).value = state.magics[i].color || '#d4f';
+    document.getElementById(`magic-mg-${i}`).value = state.magics[i].mgType || 0;
+    document.getElementById(`magic-spd-${i}`).value = state.magics[i].spd || 1.0;
+    document.getElementById(`magic-reps-${i}`).value = state.magics[i].reps || 1;
+  }
+  buildItemsList();
+}
+
+function openSettings() {
+  cancelAnimationFrame(state.animId); state.attackActive = false; state.magicActive = false;
+  document.getElementById('attack-box').classList.remove('active');
+  document.getElementById('magic-box').style.display = 'none';
+  closeSubmenu();
+  populateSettingsInputs(); switchTab(0);
+  document.getElementById('battle-screen').classList.remove('active');
+  document.getElementById('settings-screen').classList.add('active');
+}
+
+function closeSettings() {
+  document.getElementById('settings-screen').classList.remove('active');
+  document.getElementById('battle-screen').classList.add('active');
+}
+
+function saveSettings() {
+  state.name = document.getElementById('cfg-name').value.trim().toUpperCase() || 'FRISK';
+  state.maxHp = Math.max(1, parseInt(document.getElementById('cfg-maxhp').value) || 20);
+  state.hp = Math.min(state.hp, state.maxHp);
+  state.def = Math.max(0, parseInt(document.getElementById('cfg-def').value) || 0);
+  state.dmgMin = Math.max(0, parseInt(document.getElementById('cfg-dmg-min').value) || 0);
+  state.dmgMax = Math.max(0, parseInt(document.getElementById('cfg-dmg-max').value) || 0);
+  state.atkSpeed = parseFloat(document.getElementById('cfg-atk-speed').value) || 1.0;
+  state.atkReps = parseInt(document.getElementById('cfg-atk-reps').value) || 1;
+  
+  state.enemy.name = document.getElementById('cfg-enemy-name').value.trim() || 'Inimigo';
+  state.enemy.hp = parseInt(document.getElementById('cfg-enemy-hp').value) || 0;
+  state.enemy.maxHp = parseInt(document.getElementById('cfg-enemy-maxhp').value) || 1;
+  state.enemy.atk = parseInt(document.getElementById('cfg-enemy-atk').value) || 0;
+  state.enemy.def = parseInt(document.getElementById('cfg-enemy-def').value) || 0;
+  state.enemy.dodge = parseInt(document.getElementById('cfg-enemy-dodge').value) || 0;
+  state.enemy.imgUrl = document.getElementById('cfg-enemy-img').value.trim();
+  state.enemy.msgTurn1 = document.getElementById('cfg-enemy-msg-turn1').value.trim();
+  state.enemy.msgVictory = document.getElementById('cfg-enemy-msg-victory').value.trim();
+  state.enemy.msgDeath = document.getElementById('cfg-enemy-msg-death').value.trim();
+
+  const customEmoji = document.getElementById('cfg-enemy-emoji').value.trim();
+  if (customEmoji) { state.enemy.emoji = customEmoji; }
+  else { const sel = document.querySelector('.emoji-choice.selected'); state.enemy.emoji = sel ? sel.dataset.emoji : '👾'; }
+
+  for(let i = 0; i < 4; i++) {
+     state.actOptions[i].name = document.getElementById(`act-name-${i}`).value.trim();
+     state.actOptions[i].type = document.getElementById(`act-type-${i}`).value;
+     state.actOptions[i].msg = document.getElementById(`act-msg-${i}`).value;
+  }
+
+  state.magicEnabled = document.getElementById('cfg-magic-toggle').checked;
+  state.magicTabName = document.getElementById('cfg-magic-tab-name').value.trim() || '🔮 Magias';
+  state.magicTabColor = document.getElementById('cfg-magic-tab-color').value.trim() || '#d4f';
+
+  for (let i = 0; i < 4; i++) {
+    state.magics[i] = {
+      name: (document.getElementById(`magic-name-${i}`)?.value || '').trim(),
+      msg: (document.getElementById(`magic-msg-${i}`)?.value || '').trim(),
+      msgSuccess: (document.getElementById(`magic-msgsuc-${i}`)?.value || '').trim(),
+      msgPartial: (document.getElementById(`magic-msgpar-${i}`)?.value || '').trim(),
+      msgMiss: (document.getElementById(`magic-msgmis-${i}`)?.value || '').trim(),
+      dmgBase: parseInt(document.getElementById(`magic-dmg-${i}`)?.value) || 0,
+      hpRegen: parseInt(document.getElementById(`magic-hp-${i}`)?.value) || 0,
+      hpCost: parseInt(document.getElementById(`magic-hpcost-${i}`)?.value) || 0,
+      cooldown: parseInt(document.getElementById(`magic-cd-${i}`)?.value) || 0,
+      color: document.getElementById(`magic-color-${i}`)?.value.trim() || '#d4f',
+      mgType: parseInt(document.getElementById(`magic-mg-${i}`)?.value) || 0,
+      spd: parseFloat(document.getElementById(`magic-spd-${i}`)?.value) || 1.0,
+      reps: parseInt(document.getElementById(`magic-reps-${i}`)?.value) || 1,
+    };
+  }
+
+  for (let i = 0; i < 20; i++) {
+    let wasEquipped = state.items[i].equipped;
+    state.items[i].name = (document.getElementById(`item-name-${i}`)?.value  || '').trim();
+    state.items[i].msg = (document.getElementById(`item-msg-${i}`)?.value   || '').trim();
+    state.items[i].msgEquip = (document.getElementById(`item-msgE-${i}`)?.value || '').trim();
+    state.items[i].msgUnequip = (document.getElementById(`item-msgU-${i}`)?.value || '').trim();
+    state.items[i].hpDelta = parseInt(document.getElementById(`item-hp-${i}`)?.value) || 0;
+    state.items[i].selfDmg = parseInt(document.getElementById(`item-selfdmg-${i}`)?.value) || 0;
+    state.items[i].buffTurns = parseInt(document.getElementById(`item-buff-${i}`)?.value) || 0;
+    state.items[i].dmgMinDelta = parseInt(document.getElementById(`item-dmin-${i}`)?.value) || 0;
+    state.items[i].dmgMaxDelta = parseInt(document.getElementById(`item-dmax-${i}`)?.value) || 0;
+    state.items[i].defDelta = parseInt(document.getElementById(`item-def-${i}`)?.value) || 0;
+    state.items[i].spdDelta = parseFloat(document.getElementById(`item-spd-${i}`)?.value) || 0;
+    state.items[i].repsDelta = parseInt(document.getElementById(`item-reps-${i}`)?.value) || 0;
+    state.items[i].consumable = document.getElementById(`item-consumable-${i}`)?.checked || false;
+    state.items[i].equipable = document.getElementById(`item-equipable-${i}`)?.checked || false;
+    
+    if(!state.items[i].equipable && wasEquipped) { 
+        state.items[i].equipped = false; 
+        state.dmgMin -= state.items[i].dmgMinDelta; state.dmgMax -= state.items[i].dmgMaxDelta; 
+        state.atkSpeed -= state.items[i].spdDelta; state.atkReps -= state.items[i].repsDelta; 
+        state.def -= state.items[i].defDelta;
+    }
+  }
+
+  saveData(); renderBattle(); setDialogue(`* Status de batalha atualizados.`); closeSettings();
+}
+
+// ─── EVENTOS DIVERSOS ───
+document.querySelectorAll('.emoji-choice').forEach(el => {
+  el.onclick = () => {
+    document.querySelectorAll('.emoji-choice').forEach(e => e.classList.remove('selected'));
+    el.classList.add('selected');
+    document.getElementById('cfg-enemy-emoji').value = '';
+  };
+});
+
+// ─── LIBRARY SHORTCUTS ───
+function getLibShortcuts() {
+  try { return JSON.parse(localStorage.getItem('undertaleRPG_shortcuts') || '[]'); } catch { return []; }
+}
+function saveLibShortcuts(arr) { localStorage.setItem('undertaleRPG_shortcuts', JSON.stringify(arr)); }
+
+function libSaveShortcut() {
+  const txt = document.getElementById('lib-data').value.trim();
+  if (!txt) { libMsg("Nada na caixa para salvar!", "red"); return; }
+  try {
+    const parsed = JSON.parse(txt);
+    const type = parsed._libType || (parsed.name && parsed.items ? 'save' : 'unknown');
+    if (type === 'unknown') { libMsg("Formato não reconhecido!", "red"); return; }
+    const label = prompt(`Nome do atalho para este ${type}:`, parsed.data?.name || type);
+    if (!label) return;
+    const shortcuts = getLibShortcuts();
+    shortcuts.push({ label: label.trim(), type, data: txt });
+    saveLibShortcuts(shortcuts);
+    buildLibShortcuts();
+    libMsg(`Atalho "${label}" salvo!`, "var(--green)");
+  } catch { libMsg("JSON inválido!", "red"); }
+}
+
+function buildLibShortcuts() {
+  const container = document.getElementById('lib-shortcuts');
+  if (!container) return;
+  const shortcuts = getLibShortcuts();
+  container.innerHTML = '';
+  if (shortcuts.length === 0) {
+    container.innerHTML = '<div style="font-size:6px; color:#444;">Nenhum atalho salvo. Exporte um inimigo/item/magia e clique em SALVAR ATALHO.</div>';
+    return;
+  }
+  shortcuts.forEach((sc, i) => {
+    const typeIcon = { enemy:'👾', item:'🎒', magic:'🔮', save:'💾' }[sc.type] || '📄';
+    const card = document.createElement('div'); card.className = 'lib-shortcut-card';
+    card.innerHTML = `
+      <span style="font-size:14px;">${typeIcon}</span>
+      <input class="lib-shortcut-name" type="text" value="${sc.label}" onchange="renameShortcut(${i}, this.value)">
+      <span class="lib-shortcut-type">${sc.type.toUpperCase()}</span>
+      <div class="lib-shortcut-actions">
+        <button class="lib-shortcut-btn" onclick="libLoadShortcut(${i})">📋</button>
+        <button class="lib-shortcut-btn send" onclick="libApplyShortcut(${i})">✅ ENVIAR</button>
+        <button class="lib-shortcut-btn del" onclick="libDeleteShortcut(${i})">🗑</button>
+      </div>`;
+    container.appendChild(card);
+  });
+}
+
+function renameShortcut(i, newName) {
+  const sc = getLibShortcuts(); sc[i].label = newName.trim() || sc[i].label; saveLibShortcuts(sc);
+}
+function libLoadShortcut(i) {
+  const sc = getLibShortcuts()[i];
+  document.getElementById('lib-data').value = sc.data;
+  libMsg(`"${sc.label}" carregado na caixa.`, "var(--yellow)");
+}
+function libDeleteShortcut(i) {
+  const sc = getLibShortcuts(); sc.splice(i, 1); saveLibShortcuts(sc); buildLibShortcuts();
+  libMsg("Atalho removido.", "#888");
+}
+function libMsg(text, color) {
+  const el = document.getElementById('lib-msg'); if (!el) return;
+  el.textContent = text; el.style.color = color;
+}
+
+function libApplyShortcut(i) {
+  const sc = getLibShortcuts()[i];
+  try {
+    const parsed = JSON.parse(sc.data);
+    const slot = applyParsedLib(parsed);
+    saveData(); populateSettingsInputs(); renderBattle();
+    libMsg(`✅ "${sc.label}" aplicado!`, "var(--green)");
+    if (window.mpRole === 'gm') mpSend({ type: 'load_data', libType: parsed._libType, data: parsed, slot });
+  } catch(e) { libMsg("Erro ao aplicar atalho: " + e.message, "red"); }
+}
+
+function applyParsedLib(parsed, slotOverride) {
+  let slot = null;
+  if (parsed._libType === 'enemy') {
+    state.enemy = { ...state.enemy, ...parsed.data };
+  } else if (parsed._libType === 'item') {
+    slot = slotOverride != null ? slotOverride : (parseInt(prompt("Slot do item? (1–20)", "1")) - 1);
+    if (slot === null || isNaN(slot) || slot < 0 || slot > 19) throw new Error("Slot inválido");
+    state.items[slot] = { ...state.items[slot], ...parsed.data };
+  } else if (parsed._libType === 'magic') {
+    slot = slotOverride != null ? slotOverride : (parseInt(prompt("Slot da magia? (1–4)", "1")) - 1);
+    if (slot === null || isNaN(slot) || slot < 0 || slot > 3) throw new Error("Slot inválido");
+    state.magics[slot] = { ...state.magics[slot], ...parsed.data };
+  } else if (parsed.name && parsed.items) {
+    state = { ...defaultState, ...parsed };
+  } else {
+    throw new Error("Formato não reconhecido");
+  }
+  return slot;
+}
+
+// ─── MULTIPLAYER (PeerJS WebRTC) ───
+let mpPeer = null;
+let mpConn = null;
+let mpRole = null;
+let mpCode = '';
+let gmStatusInterval = null;
+
+window.mpRole = null;
+
+function generateCode() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let code = '';
+  for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
+  document.getElementById('channel-code-input').value = code;
+}
+
+function getChannelCode() {
+  const v = document.getElementById('channel-code-input').value.trim().toUpperCase();
+  if (!v || v.length < 3) { alert("Digite ou gere um código de sessão primeiro!"); return null; }
+  return v;
+}
+
+function enterAsGM() {
+  const code = getChannelCode(); if (!code) return;
+  mpCode = code; mpRole = 'gm'; window.mpRole = 'gm';
+  document.getElementById('role-selector').style.display = 'none';
+  document.getElementById('gm-bar').classList.add('active');
+  document.getElementById('battle-screen').classList.add('active');
+  document.getElementById('gm-channel-display').textContent = code;
+  document.getElementById('gm-status-dot').classList.add('waiting');
+  buildLibShortcuts();
+  init();
+  mpLog("Sessão criada. Aguardando jogador...");
+  setDialogue(`* Sessão ${code} aberta. Aguardando jogador...`);
+  mpSetupGM();
+  
+  // Periodically request status from player
+  gmStatusInterval = setInterval(() => {
+    if (mpConn && mpConn.open) mpSend({ type: 'request_status' });
+  }, 2000);
+}
+
+function enterAsPlayer() {
+  const code = getChannelCode(); if (!code) return;
+  mpCode = code; mpRole = 'player'; window.mpRole = 'player';
+  document.getElementById('role-selector').style.display = 'none';
+  document.getElementById('battle-screen').classList.add('active');
+  init();
+  mpLog("Conectando ao Mestre...");
+  setDialogue(`* Conectando ao Mestre...`);
+  mpSetupPlayer();
+}
+
+function mpSetupGM() {
+  const peerId = 'utRPG_' + mpCode;
+  mpLog(`Criando sala PeerJS: ${peerId}`);
+  mpPeer = new Peer(peerId);
+
+  mpPeer.on('open', (id) => {
+    mpLog(`Sala aberta! ID: ${id}`);
+  });
+
+  mpPeer.on('connection', (conn) => {
+    mpConn = conn;
+    mpLog(`Jogador conectando...`);
+    conn.on('open', () => {
+      document.getElementById('gm-status-dot').classList.remove('waiting');
+      document.getElementById('gm-status-dot').classList.add('connected');
+      mpLog(`✅ Jogador conectado!`);
+      setDialogue(`* Jogador entrou na sessão!`);
+      mpSend({ type: 'ping', role: 'gm' });
+      mpSend({ type: 'request_status' });
+    });
+    conn.on('data', (data) => mpReceive(data));
+    conn.on('close', () => {
+      document.getElementById('gm-status-dot').classList.remove('connected');
+      document.getElementById('gm-status-dot').classList.add('waiting');
+      mpLog("Jogador desconectou.");
+      mpConn = null;
+    });
+    conn.on('error', (e) => mpLog("Erro: " + e.message));
+  });
+
+  mpPeer.on('error', (e) => {
+    if (e.type === 'unavailable-id') {
+      mpLog("⚠ Código já em uso. Gere outro código.");
+      setDialogue(`* Código ${mpCode} já está em uso!`);
+    } else {
+      mpLog("Erro PeerJS: " + e.message);
+    }
+  });
+}
+
+function mpSetupPlayer() {
+  const peerId = 'utRPG_' + mpCode;
+  mpLog(`Conectando a: ${peerId}`);
+  mpPeer = new Peer();
+
+  mpPeer.on('open', () => {
+    mpConn = mpPeer.connect(peerId, { reliable: true });
+    mpConn.on('open', () => {
+      mpLog(`✅ Conectado ao Mestre!`);
+      setDialogue(`* Mestre conectado! Pronto para jogar.`);
+      mpSend({ type: 'ping', role: 'player' });
+      mpSendStatus();
+    });
+    mpConn.on('data', (data) => mpReceive(data));
+    mpConn.on('close', () => {
+      mpLog("Mestre desconectou.");
+      setDialogue(`* Conexão com o Mestre perdida.`);
+      mpConn = null;
+    });
+    mpConn.on('error', (e) => mpLog("Erro: " + e.message));
+  });
+
+  mpPeer.on('error', (e) => {
+    if (e.type === 'peer-unavailable') {
+      mpLog("⚠ Mestre não encontrado. Verifique o código.");
+      setDialogue(`* Sala ${mpCode} não encontrada!`);
+    } else {
+      mpLog("Erro PeerJS: " + e.message);
+    }
+  });
+}
+
+function mpSend(payload) {
+  if (!mpConn || !mpConn.open) return;
+  try { mpConn.send(payload); } catch(e) { mpLog("Erro ao enviar: " + e.message); }
+}
+
+function mpReceive(payload) {
+  if (!payload || !payload.type) return;
+
+  if (payload.type === 'ping') {
+    document.getElementById('gm-status-dot').classList.remove('waiting');
+    document.getElementById('gm-status-dot').classList.add('connected');
+    mpLog(`${payload.role === 'player' ? 'Jogador' : 'Mestre'} conectou!`);
+    mpSend({ type: 'pong', role: mpRole });
+    return;
+  }
+  if (payload.type === 'pong') {
+    document.getElementById('gm-status-dot').classList.remove('waiting');
+    document.getElementById('gm-status-dot').classList.add('connected');
+    return;
+  }
+
+  // GM → Player messages
+  if (mpRole === 'player') {
+    if (payload.type === 'request_status') {
+      mpSendStatus();
+    }
+    else if (payload.type === 'enemy_attack') {
+      // Enemy attacks the player — looks like normal game event, no "mestre" label
+      const dmg = Math.max(0, payload.dmg - state.def);
+      state.hp = Math.max(0, state.hp - dmg);
+      updateHpBar(); saveData();
+      popText(`-${dmg}`, '#ff5555', 'hp-change-popup');
+      // Flash HP section
+      const hpSec = document.getElementById('hp-section');
+      hpSec.classList.remove('hit-flash'); void hpSec.offsetWidth; hpSec.classList.add('hit-flash');
+      // Shake enemy sprite for attack feel
+      const sprite = document.getElementById('enemy-sprite');
+      sprite.classList.remove('shake'); void sprite.offsetWidth; sprite.classList.add('shake');
+      
+      if (payload.msg) setDialogue(`* ${payload.msg}`);
+      else setDialogue(`* ${state.enemy.name} ataca!\n  ${dmg} de dano!`);
+      
+      mpSendStatus();
+      checkStateEvents();
+    }
+    else if (payload.type === 'custom_dmg') {
+      // Silent damage — no "mestre" prefix, looks like natural game damage
+      const dmg = Math.abs(payload.dmg);
+      state.hp = Math.max(0, state.hp - dmg);
+      updateHpBar(); saveData();
+      popText(`-${dmg}`, '#ff5555', 'hp-change-popup');
+      const hpSec = document.getElementById('hp-section');
+      hpSec.classList.remove('hit-flash'); void hpSec.offsetWidth; hpSec.classList.add('hit-flash');
+      
+      if (payload.msg) setDialogue(`* ${payload.msg}`);
+      // No dialogue if no message — truly silent
+      
+      mpSendStatus();
+      checkStateEvents();
+    }
+    else if (payload.type === 'custom_heal') {
+      const heal = Math.abs(payload.heal);
+      state.hp = Math.min(state.maxHp, state.hp + heal);
+      updateHpBar(); saveData();
+      popText(`+${heal}`, '#44ff88', 'hp-change-popup');
+      
+      if (payload.msg) setDialogue(`* ${payload.msg}`);
+      
+      mpSendStatus();
+    }
+    else if (payload.type === 'enemy_talk') {
+      // Enemy speaks — shown as dialogue from the enemy
+      setDialogue(`* ${state.enemy.name}: ${payload.text}`);
+    }
+    else if (payload.type === 'set_hp') {
+      state.hp = Math.max(0, Math.min(state.maxHp, payload.hp));
+      updateHpBar(); saveData(); checkStateEvents();
+      if(payload.delta) popText(payload.delta > 0 ? `+${payload.delta}` : `${payload.delta}`, payload.delta > 0 ? '#44ff88' : '#ff5555', 'hp-change-popup');
+      if(payload.msg) setDialogue(`* ${payload.msg}`);
+      mpSendStatus();
+    }
+    else if (payload.type === 'set_enemy_hp') {
+      state.enemy.hp = Math.max(0, Math.min(state.enemy.maxHp, payload.hp));
+      updateEnemyHpBar(); saveData(); checkStateEvents();
+      mpSendStatus();
+    }
+    else if (payload.type === 'load_enemy') {
+      state.enemy = { ...state.enemy, ...payload.data };
+      saveData(); renderBattle(); populateSettingsInputs();
+      setDialogue(`* ${state.enemy.name} surge!`);
+      mpSendStatus();
+    }
+    else if (payload.type === 'load_item') {
+      const slot = payload.slot != null ? payload.slot : 0;
+      state.items[slot] = { ...state.items[slot], ...payload.data };
+      saveData(); buildItemsList();
+      setDialogue(`* Você recebeu: ${payload.data.name || 'item'}!`);
+    }
+    else if (payload.type === 'load_magic') {
+      const slot = payload.slot != null ? payload.slot : 0;
+      state.magics[slot] = { ...state.magics[slot], ...payload.data };
+      saveData(); buildMagicsList(); populateSettingsInputs();
+      setDialogue(`* Nova magia: ${payload.data.name || 'magia'}!`);
+    }
+    else if (payload.type === 'load_data') {
+      try {
+        applyParsedLib(payload.data, payload.slot);
+        saveData(); renderBattle(); populateSettingsInputs();
+        setDialogue(`* Dados recebidos!`);
+        mpSendStatus();
+      } catch {}
+    }
+    else if (payload.type === 'gm_msg') {
+      setDialogue(`* ${payload.text}`);
+    }
+  }
+
+  // Player → GM messages
+  if (mpRole === 'gm') {
+    if (payload.type === 'status_update') {
+      gmUpdateBars(payload);
+    }
+    if (payload.type === 'ping' || payload.type === 'pong') {
+      document.getElementById('gm-status-dot').classList.add('connected');
+    }
+  }
+}
+
+// Update GM HP bars in realtime
+function gmUpdateBars(data) {
+  const { hp, maxHp, enemyHp, enemyMaxHp } = data;
+  
+  // Player HP
+  document.getElementById('gm-hp-display').textContent = `${hp} / ${maxHp}`;
+  const pPct = Math.max(0, Math.min(100, (hp / maxHp) * 100));
+  const pBar = document.getElementById('gm-player-hp-bar');
+  pBar.style.width = pPct + '%';
+  pBar.style.background = pPct > 50 ? '#ffff00' : pPct > 25 ? '#ff8800' : '#ff0000';
+  
+  // Enemy HP
+  document.getElementById('gm-enemy-hp-display').textContent = `${enemyHp} / ${enemyMaxHp}`;
+  const ePct = Math.max(0, Math.min(100, (enemyHp / enemyMaxHp) * 100));
+  const eBar = document.getElementById('gm-enemy-hp-bar');
+  eBar.style.width = ePct + '%';
+  eBar.style.background = ePct > 50 ? '#00ff00' : ePct > 25 ? '#ffff00' : '#ff0000';
+}
+
+function mpSendStatus() {
+  if (mpRole !== 'player') return;
+  mpSend({ type: 'status_update', hp: state.hp, maxHp: state.maxHp, enemyHp: state.enemy.hp, enemyMaxHp: state.enemy.maxHp });
+}
+
+function saveData() {
+  localStorage.setItem('undertaleRPG_Data', JSON.stringify(state));
+  if (mpRole === 'player') mpSendStatus();
+}
+
+function mpLog(msg) {
+  const log = document.getElementById('gm-msg-log'); if (!log) return;
+  const t = new Date().toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  log.innerHTML = `<span style="color:#444">[${t}]</span> ${msg}\n` + log.innerHTML;
+}
+
+// ─── GM ACTIONS ───
+
+// Enemy normal attack using enemy ATK stat
+function gmEnemyAttack() {
+  const atk = state.enemy.atk || 5;
+  const variance = Math.floor(atk * 0.3);
+  const dmg = atk + Math.floor(Math.random() * (variance * 2 + 1)) - variance;
+  mpSend({ type: 'enemy_attack', dmg: Math.max(1, dmg) });
+  mpLog(`⚔ ${state.enemy.name} atacou! (${dmg} ATK)`);
+}
+
+// Toggle custom damage panel
+function gmToggleCustomDmg() {
+  const area = document.getElementById('gm-custom-dmg-area');
+  area.classList.toggle('active');
+}
+
+// Send custom damage (silent — no "mestre" label on player side)
+function gmSendCustomDmg() {
+  const val = parseInt(document.getElementById('gm-custom-dmg-val').value) || 0;
+  if (val <= 0) { mpLog("Valor de dano inválido."); return; }
+  const msg = document.getElementById('gm-custom-dmg-msg').value.trim();
+  mpSend({ type: 'custom_dmg', dmg: val, msg: msg || '' });
+  mpLog(`💥 Dano custom: ${val}${msg ? ` (${msg.slice(0,20)})` : ''}`);
+  document.getElementById('gm-custom-dmg-val').value = '';
+  document.getElementById('gm-custom-dmg-msg').value = '';
+}
+
+// Send custom heal
+function gmSendCustomHeal() {
+  const val = parseInt(document.getElementById('gm-custom-dmg-val').value) || 0;
+  if (val <= 0) { mpLog("Valor de cura inválido."); return; }
+  const msg = document.getElementById('gm-custom-dmg-msg').value.trim();
+  mpSend({ type: 'custom_heal', heal: val, msg: msg || '' });
+  mpLog(`💚 Cura custom: ${val}`);
+  document.getElementById('gm-custom-dmg-val').value = '';
+  document.getElementById('gm-custom-dmg-msg').value = '';
+}
+
+// Toggle talk panel
+function gmToggleTalk() {
+  const area = document.getElementById('gm-talk-area');
+  area.classList.toggle('active');
+}
+
+// Send enemy talk
+function gmSendTalk() {
+  const text = document.getElementById('gm-talk-text').value.trim();
+  if (!text) return;
+  mpSend({ type: 'enemy_talk', text });
+  mpLog(`💬 ${state.enemy.name}: "${text.slice(0, 30)}"`);
+  document.getElementById('gm-talk-text').value = '';
+}
+
+// Quick taunt — random enemy taunt
+function gmQuickTaunt() {
+  const taunts = [
+    "Você não tem chance!",
+    "Prepare-se para sofrer!",
+    "Hahaha!",
+    "É isso que você sabe fazer?",
+    "Patético...",
+    "Venha! Eu estou esperando!",
+    "Você vai se arrepender!",
+    "...",
+  ];
+  const text = taunts[Math.floor(Math.random() * taunts.length)];
+  mpSend({ type: 'enemy_talk', text });
+  mpLog(`💬 Provocação: "${text}"`);
+}
+
+function gmChangeHp(sign) {
+  const delta = Math.abs(parseInt(document.getElementById('gm-hp-delta')?.value) || 1) * sign;
+  const cur = parseInt(document.getElementById('gm-hp-display').textContent) || 20;
+  const newHp = Math.max(0, cur + delta);
+  mpSend({ type: 'set_hp', hp: newHp, delta, msg: '' });
+  mpLog(`HP jogador ${delta > 0 ? '+' : ''}${delta}`);
+}
+
+function gmSetHp() {
+  const val = prompt("Definir HP do jogador para:", "20");
+  if (val === null) return;
+  const hp = parseInt(val);
+  if (isNaN(hp)) { alert("Número inválido"); return; }
+  mpSend({ type: 'set_hp', hp, delta: 0, msg: '' });
+  mpLog(`HP do jogador → ${hp}`);
+}
+
+function gmChangeEnemyHp(sign) {
+  const delta = Math.abs(parseInt(document.getElementById('gm-enemy-delta')?.value) || 1) * sign;
+  const cur = parseInt(document.getElementById('gm-enemy-hp-display').textContent) || 0;
+  const newHp = Math.max(0, cur + delta);
+  mpSend({ type: 'set_enemy_hp', hp: newHp });
+  mpLog(`HP Inimigo ${sign > 0 ? '+' : ''}${delta}`);
+}
+
+function openGmSendPanel(mode) {
+  const panel = document.getElementById('gm-send-panel');
+  const title = document.getElementById('gm-panel-title');
+  const content = document.getElementById('gm-panel-content');
+  panel.style.display = 'flex';
+
+  if (mode === 'enemy') {
+    title.textContent = '👾 ENVIAR INIMIGO';
+    content.innerHTML = `
+      <p style="font-size:6px; color:#888; margin-bottom:6px; line-height:1.8;">Envia o inimigo atual configurado para o jogador.</p>
+      <button class="gm-act-btn send" style="width:100%;" onclick="gmSendEnemy()">📤 ENVIAR INIMIGO ATUAL</button>
+      <div style="margin-top:8px;">
+        <p style="font-size:6px; color:#888; margin-bottom:4px;">Ou cole JSON de inimigo:</p>
+        <textarea id="gm-json-input" style="width:100%; height:60px; background:#000; color:#fff; border:1px solid #444; font-family:inherit; font-size:6px; padding:4px;" placeholder='{"name":"...","hp":100,...}'></textarea>
+        <button class="gm-act-btn send" style="width:100%; margin-top:4px;" onclick="gmSendJson('enemy')">📤 ENVIAR DO JSON</button>
+      </div>`;
+  } else if (mode === 'item') {
+    title.textContent = '🎒 ENVIAR ITEM';
+    let opts = ''; for (let i = 0; i < 20; i++) { const it = state.items[i]; opts += `<option value="${i}">${String(i+1).padStart(2,'0')} ${it.name || '(vazio)'}</option>`; }
+    content.innerHTML = `
+      <div style="display:flex; gap:6px; align-items:center; margin-bottom:6px;">
+        <select id="gm-item-sel" class="gm-input" style="flex:1;">${opts}</select>
+        <label style="font-size:6px; color:#888;">→ Slot</label>
+        <input type="number" id="gm-item-dst" class="gm-input" value="1" min="1" max="20" style="max-width:40px;">
+      </div>
+      <button class="gm-act-btn send" style="width:100%;" onclick="gmSendItem()">📤 ENVIAR ITEM</button>
+      <div style="margin-top:8px;">
+        <p style="font-size:6px; color:#888; margin-bottom:4px;">Ou cole JSON de item:</p>
+        <textarea id="gm-json-input" style="width:100%; height:50px; background:#000; color:#fff; border:1px solid #444; font-family:inherit; font-size:6px; padding:4px;"></textarea>
+        <input type="number" id="gm-json-slot" class="gm-input" value="1" min="1" max="20" style="width:100%; margin-top:4px;" placeholder="Slot destino (1-20)">
+        <button class="gm-act-btn send" style="width:100%; margin-top:4px;" onclick="gmSendJson('item')">📤 ENVIAR DO JSON</button>
+      </div>`;
+  } else if (mode === 'magic') {
+    title.textContent = '🔮 ENVIAR MAGIA';
+    let opts = ''; for (let i = 0; i < 4; i++) { const m = state.magics[i]; opts += `<option value="${i}">0${i+1} ${m.name || '(vazio)'}</option>`; }
+    content.innerHTML = `
+      <div style="display:flex; gap:6px; align-items:center; margin-bottom:6px;">
+        <select id="gm-magic-sel" class="gm-input" style="flex:1;">${opts}</select>
+        <label style="font-size:6px; color:#888;">→ Slot</label>
+        <input type="number" id="gm-magic-dst" class="gm-input" value="1" min="1" max="4" style="max-width:40px;">
+      </div>
+      <button class="gm-act-btn send" style="width:100%;" onclick="gmSendMagic()">📤 ENVIAR MAGIA</button>
+      <div style="margin-top:8px;">
+        <p style="font-size:6px; color:#888; margin-bottom:4px;">Ou cole JSON de magia:</p>
+        <textarea id="gm-json-input" style="width:100%; height:50px; background:#000; color:#fff; border:1px solid #444; font-family:inherit; font-size:6px; padding:4px;"></textarea>
+        <input type="number" id="gm-json-slot" class="gm-input" value="1" min="1" max="4" style="width:100%; margin-top:4px;" placeholder="Slot destino (1-4)">
+        <button class="gm-act-btn send" style="width:100%; margin-top:4px;" onclick="gmSendJson('magic')">📤 ENVIAR DO JSON</button>
+      </div>`;
+  } else if (mode === 'msg') {
+    title.textContent = '💬 MENSAGEM DO GM';
+    content.innerHTML = `
+      <textarea id="gm-msg-text" style="width:100%; height:60px; background:#000; color:#fff; border:1px solid #444; font-family:inherit; font-size:7px; padding:6px;" placeholder="Texto a aparecer no diálogo do jogador..."></textarea>
+      <button class="gm-act-btn send" style="width:100%; margin-top:8px;" onclick="gmSendMsg()">📤 ENVIAR MENSAGEM</button>`;
+  }
+}
+
+function closeGmSendPanel() {
+  document.getElementById('gm-send-panel').style.display = 'none';
+}
+
+function gmSendEnemy() {
+  mpSend({ type: 'load_enemy', data: { ...state.enemy } });
+  mpLog(`Inimigo enviado: ${state.enemy.name}`);
+  closeGmSendPanel();
+}
+
+function gmSendItem() {
+  const src = parseInt(document.getElementById('gm-item-sel').value);
+  const dst = Math.max(0, Math.min(19, parseInt(document.getElementById('gm-item-dst').value) - 1));
+  const item = state.items[src];
+  if (!item.name) { mpLog("Item sem nome, abortado."); return; }
+  mpSend({ type: 'load_item', slot: dst, data: { ...item } });
+  mpLog(`Item "${item.name}" → slot ${dst+1}`);
+  closeGmSendPanel();
+}
+
+function gmSendMagic() {
+  const src = parseInt(document.getElementById('gm-magic-sel').value);
+  const dst = Math.max(0, Math.min(3, parseInt(document.getElementById('gm-magic-dst').value) - 1));
+  const magic = state.magics[src];
+  if (!magic.name) { mpLog("Magia sem nome, abortado."); return; }
+  mpSend({ type: 'load_magic', slot: dst, data: { ...magic } });
+  mpLog(`Magia "${magic.name}" → slot ${dst+1}`);
+  closeGmSendPanel();
+}
+
+function gmSendMsg() {
+  const text = document.getElementById('gm-msg-text').value.trim();
+  if (!text) return;
+  mpSend({ type: 'gm_msg', text });
+  mpLog(`Msg: ${text.slice(0, 30)}`);
+  closeGmSendPanel();
+}
+
+function gmSendJson(type) {
+  try {
+    const raw = document.getElementById('gm-json-input').value.trim();
+    const data = JSON.parse(raw);
+    const slotEl = document.getElementById('gm-json-slot');
+    const slot = slotEl ? Math.max(0, parseInt(slotEl.value || '1') - 1) : 0;
+    if (type === 'enemy') {
+      mpSend({ type: 'load_enemy', data });
+      mpLog(`Inimigo JSON enviado`);
+    } else if (type === 'item') {
+      mpSend({ type: 'load_item', slot, data });
+      mpLog(`Item JSON → slot ${slot+1}`);
+    } else if (type === 'magic') {
+      mpSend({ type: 'load_magic', slot, data });
+      mpLog(`Magia JSON → slot ${slot+1}`);
+    }
+    closeGmSendPanel();
+  } catch(e) { mpLog("JSON inválido: " + e.message); }
+}
+
+document.addEventListener('DOMContentLoaded', () => { generateCode(); });
+</script>
+</body>
+</html>
